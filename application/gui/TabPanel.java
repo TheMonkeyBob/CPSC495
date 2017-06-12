@@ -1,7 +1,6 @@
 package application.gui;
 
 import ij.ImagePlus;
-import ij.io.Opener;
 
 import application.GeneImageAspect;
 import application.internal.Engine;
@@ -21,11 +20,11 @@ class TabPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    public TabPanel(MainWindow main, Engine engine, String greenPath, String redPath, int number) {
+    public TabPanel(MainWindow main, Engine engine, int number) {
         this.main = main;
         this.engine = engine;
         this.myNumber = number;
-        setup(greenPath, redPath);
+        setup();
     }
 
     private SegmentDisplay sdGreenSlide;
@@ -33,7 +32,7 @@ class TabPanel extends JPanel {
     private int myNumber;
 
     private DecimalFormat df = new DecimalFormat("###.####");
-    protected GeneImageAspect ratioMethod;
+    protected int ratioMethod;
 
     private JScrollPane gridScrollPane;
     private JPanel gridScrollPanePanel;
@@ -82,7 +81,7 @@ class TabPanel extends JPanel {
     protected Polygon cell;
     private int w, h, newTopLeftX, newTopLeftY, gridNum, spotNum;
 
-    private void setup(String greenPath, String redPath) {
+    private void setup() {
         ratioMethod = GeneImageAspect.TOTAL_SIGNAL;
 
         this.setBorder(blackline);
@@ -93,7 +92,7 @@ class TabPanel extends JPanel {
         gbl_panel.rowWeights = new double[] { Double.MIN_VALUE };
         this.setLayout(gbl_panel);
 
-        imageDisplayPanel = new ImageDisplayPanel(engine, buildImage(greenPath, redPath), myNumber);
+        imageDisplayPanel = new ImageDisplayPanel(engine, buildImage(), myNumber);
         imageDisplayPanel.getCanvas().addMouseListener(new MouseListener() {
             @Override
             public void mouseClicked(MouseEvent e) {
@@ -344,18 +343,17 @@ class TabPanel extends JPanel {
         lblNewLabel_1.setBounds(10, 20, 300, 14);
         segment.add(lblNewLabel_1);
 
-        Opener greenImage = new Opener();
-        Opener redImage = new Opener();
-        Image green = greenImage.openImage(greenPath).getImage();
-        Image red = redImage.openImage(redPath).getImage();
-        ipGrn = greenImage.openImage(greenPath);
-        ipRed = redImage.openImage(redPath);
+        ipGrn = engine.getSample_GreenImagePlus(myNumber);
+        ipRed = engine.getSample_RedImagePlus(myNumber);
+        //Image green = ipGrn.getImage();
+        //Image red = ipRed.getImage();
 
         JRadioButton rdbtnNewRadioButton = new JRadioButton("Adaptive Circle");
         rdbtnNewRadioButton.setBounds(310, 16, 110, 23);
         rdbtnNewRadioButton.addActionListener(adaptiveCircle -> {
-            segmentationMode(green, red, segment);
-            segmentMode = 2;
+            segmentationMode(segment);
+            segmentMode = GeneImageAspect.ADAPTIVE_CIRCLE;
+            engine.setSample_SegmentationMethod(myNumber, segmentMode);
             refreshSegmentation();
         });
         segment.add(rdbtnNewRadioButton);
@@ -363,8 +361,9 @@ class TabPanel extends JPanel {
         JRadioButton rdbtnNewRadioButton_1 = new JRadioButton("Seeded Region Growing");
         rdbtnNewRadioButton_1.setBounds(420, 16, 160, 23);
         rdbtnNewRadioButton_1.addActionListener(seededRegionButton -> {
-            segmentationMode(green, red, segment);
-            segmentMode = 1;
+            segmentationMode(segment);
+            segmentMode = GeneImageAspect.SEEDED_REGION;
+            engine.setSample_SegmentationMethod(myNumber, segmentMode);
             refreshSegmentation();
         });
 
@@ -434,6 +433,7 @@ class TabPanel extends JPanel {
         slidderSeededThreshold.addChangeListener(seededThresholdChange -> {
             if (sdGreenSlide != null) {
                 updateGeneInfo(segmentMode);
+                engine.setSample_MethodThreshold(myNumber, slidderSeededThreshold.getValue());
                 sdGreenSlide.repaint();
                 sdRedSlide.repaint();
             }
@@ -513,6 +513,8 @@ class TabPanel extends JPanel {
                         ratioMethod = GeneImageAspect.AVG_SUBTRACT_BG;
                         break;
                 }
+                engine.setSample_RatioMethod(myNumber, ratioMethod);
+
                 updateGeneInfo(segmentMode);
             }
         });
@@ -546,11 +548,9 @@ class TabPanel extends JPanel {
         expression.add(lblCombined);
     }
 
-    private Image buildImage(String greenPath, String redPath) {
-        Opener greenImage = new Opener();
-        Opener redImage = new Opener();
-        Image green = greenImage.openImage(greenPath).getImage();
-        Image red = redImage.openImage(redPath).getImage();
+    private Image buildImage() {
+        Image green = engine.getSample_GreenImage(myNumber);
+        Image red = engine.getSample_RedImage(myNumber);
 
         Dimension redDim = new Dimension(red.getWidth(null), red.getHeight(null));
         Dimension greenDim = new Dimension(green.getWidth(null), green.getHeight(null));
@@ -708,7 +708,7 @@ class TabPanel extends JPanel {
         }
     }
 
-    private void segmentationMode(Image greenImage, Image redImage, JPanel target) {
+    private void segmentationMode(JPanel target) {
 
         if (sdGreenSlide == null && engine.getSample_GridCount(myNumber) > 0 && engine.getSample_Grid_Columns(myNumber, 0) > 0) {
             int[][] grnPixels = new int[ipGrn.getHeight()][ipGrn.getWidth()];
@@ -725,11 +725,11 @@ class TabPanel extends JPanel {
             }
 
 
-            sdGreenSlide = new SegmentDisplay(myNumber, greenImage, engine);
+            sdGreenSlide = new SegmentDisplay(myNumber, ipGrn, engine);
             sdGreenSlide.setBounds(-10, -50, 200, 200);
             sdGreenSlide.RawPixels = grnPixels;
 
-            sdRedSlide = new SegmentDisplay(myNumber, redImage, engine);
+            sdRedSlide = new SegmentDisplay(myNumber, ipRed, engine);
             sdRedSlide.setBounds(-20, -100, 200, 200);
             sdRedSlide.RawPixels = redPixels;
 
@@ -836,7 +836,7 @@ class TabPanel extends JPanel {
             autoThresh[3] = Integer.MAX_VALUE;
         }
 */
-        if(i == 1){//methodCombo.getSelectedItem().toString().equals("Seeded Region Growing")){
+        if(i == GeneImageAspect.SEEDED_REGION){//methodCombo.getSelectedItem().toString().equals("Seeded Region Growing")){
             Object[] params = new Object[1];
             params[0] = slidderSeededThreshold.getValue();
             engine.setSample_Gene_Data(myNumber, sdRedSlide.getCellPixels(),sdGreenSlide.getCellPixels(),
@@ -844,7 +844,7 @@ class TabPanel extends JPanel {
             sdRedSlide.setSeededRegion(engine.getSample_Gene_CenterSpots(myNumber, true));
             sdGreenSlide.setSeededRegion(engine.getSample_Gene_CenterSpots(myNumber, false));
         }
-        else if(i == 2){
+        else if(i == GeneImageAspect.ADAPTIVE_CIRCLE){
             int minr, maxr;
             try{
                 minr = 2;
@@ -914,13 +914,13 @@ class TabPanel extends JPanel {
         params[3] = sdRedSlide.getCellWidth();
         params[4] = segmentMode;
 
-        if (segmentMode == 1)
+        if (segmentMode == GeneImageAspect.SEEDED_REGION)
         {
             Object[] params2 = new Object[1];
             params[0] = slidderSeededThreshold.getValue();
             params[5] = params2;
         }
-        else if (segmentMode == 2)
+        else if (segmentMode == GeneImageAspect.ADAPTIVE_CIRCLE)
         {
             Object[] params2 = new Object[3];
             params[0] = new Integer(2);

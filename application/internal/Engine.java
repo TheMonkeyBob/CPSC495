@@ -1,9 +1,11 @@
 package application.internal;
 
 import java.awt.*;
+import java.io.IOException;
 
 import application.GeneImageAspect;
 import application.file.ExpressionWriter;
+import ij.ImagePlus;
 
 /**
  * Created by Lukas Pihl
@@ -26,48 +28,33 @@ public class Engine
     // File Functions
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /**
-     * Opens the file writer for exporting expression data.
-     * Be sure to use close function when the writer is no longer needed.
-     * @param sample The number of the sample to export expression data from
-     * @param filePath The full file path to export the data to
-     */
-    public void File_ExportExpression_Open(int sample, String filePath)
+    public boolean File_ExportExpressionData(String filePath, int sample)
     {
-        exp_writer = new ExpressionWriter(sample, filePath);
-    }
-
-    /**
-     * Closes the file writer for exporting expression data.
-     */
-    public void File_ExportExpression_Close()
-    {
-        //TODO: Close ExpressionWriter
-        exp_writer = null;
-    }
-
-    //TODO: Find a better way of handling parameters
-    /**
-     * Sends data to the expression data writer. The sample number will have been specified when initiating the writer.
-     * @param grid The grid to get data from.
-     * @param spot The spot in the grid to get data from.
-     * @param params Various pieces of data needed to get gene data. Array should be size 6.
-     *               0 = int[] of red pixel data
-     *               1 = int[] of green pixel data
-     *               2 = int of height
-     *               3 = int of width
-     *               4 = int of type
-     *               5 = Object[] of extra parameter
-     */
-    public void File_ExportExpression_WriteLine(int grid, int spot, Object[] params)
-    {
-        if (exp_writer != null)
+        try
         {
-            String name = project.getSample_Gene_Name(exp_writer.getSampleNumber(), grid, spot);
-            project.setSample_Gene_Data(exp_writer.getSampleNumber(), (int[])params[0], (int[])params[1], (int)params[2], (int)params[3], (int)params[4], (Object[])params[5]);
-            double ratio = project.getSample_Gene_Ratio(1, GeneImageAspect.AVG_SIGNAL);
-            exp_writer.writeLine(name, ratio);
+            exp_writer = new ExpressionWriter(filePath);
+            AllGeneData agd = new AllGeneData(project.getSample(sample));
+            agd.calculate();
+            String gname, line;
+            for (int i = 0; i < agd.nSpots; i++) {
+                gname = agd.getGeneName(i);
+                boolean flagStatus = agd.getFlagStatus(i);
+                if(!gname.equalsIgnoreCase("empty")&&!gname.equalsIgnoreCase("blank")&&!gname.equalsIgnoreCase("missing")&&!gname.equalsIgnoreCase("none")&&!gname.equalsIgnoreCase("No Gene Specified")){
+                    line = gname+'\t';
+                    if(!flagStatus) {
+                        line = line+String.valueOf(agd.getRatio(i));
+                    }
+                    else line = line + "\t";
+                    exp_writer.writeLine(line);
+                }
+            }
+            //close expression writer
         }
+        catch (IOException e)
+        {
+            return false;
+        }
+        return true;
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -180,6 +167,8 @@ public class Engine
     {
         project.addSample();
     }
+
+    public void addSample(String greenPath, String redPath) { project.addSample(greenPath, redPath); }
 
     /**
      * Gets the number of grids for the specified sample.
@@ -462,7 +451,7 @@ public class Engine
      * @param aspect Method to use to get ratio.
      * @return The ratio for the gene data.
      */
-    public double getSample_Gene_Ratio(int sample, GeneImageAspect aspect)
+    public double getSample_Gene_Ratio(int sample, int aspect)
     {
         return project.getSample_Gene_Ratio(sample, aspect);
     }
@@ -567,5 +556,40 @@ public class Engine
     public Polygon getSample_Grid_Spot(int sample, int grid, int spot)
     {
         return project.getSample_Grid_Spot(sample, grid, spot);
+    }
+
+    public void setSample_RatioMethod(int sample, int method)
+    {
+        project.setSample_RatioMethod(sample, method);
+    }
+
+    public void setSample_SegmentationMethod(int sample, int method)
+    {
+        project.setSample_SegmentationMethod(sample, method);
+    }
+
+    public void setSample_MethodThreshold(int sample, int threshold)
+    {
+        project.setSample_MethodThreshold(sample, threshold);
+    }
+
+    public Image getSample_GreenImage(int sample)
+    {
+        return project.getSample_GreenImage(sample);
+    }
+
+    public Image getSample_RedImage(int sample)
+    {
+        return project.getSample_RedImage(sample);
+    }
+
+    public ImagePlus getSample_GreenImagePlus(int sample)
+    {
+        return project.getSample_GreenImagePlus(sample);
+    }
+
+    public ImagePlus getSample_RedImagePlus(int sample)
+    {
+        return project.getSample_RedImagePlus(sample);
     }
 }

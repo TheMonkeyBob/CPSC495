@@ -3,11 +3,11 @@ package application;
 import application.gui.MainWindow;
 import application.internal.Engine;
 
-import javax.swing.*;
-import java.awt.*;
+import javax.swing.JFrame;
+import java.awt.EventQueue;
 
 /**
- * Created by TheMonkeyBob on 2017-05-13.
+ * Created by Lukas Pihl
  */
 public class Application
 {

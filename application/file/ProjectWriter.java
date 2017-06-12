@@ -23,6 +23,6 @@ public class ProjectWriter
     public static void writeProject(String filePath, ArrayList<Object> state) throws IOException
     {
         BufferedWriter writer = new BufferedWriter(new FileWriter(filePath));
-        state.get(0);
+        writer.write((String)((ArrayList<Object>)(state.get(0))).get(0) + "\n");
     }
 }

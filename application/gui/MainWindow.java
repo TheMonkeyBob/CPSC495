@@ -52,7 +52,7 @@ public class MainWindow extends JFrame {
     public MainWindow(Engine engine)
     {
         super("Improved Magic Tool");
-        setIconImage(Toolkit.getDefaultToolkit().getImage(MainWindow.class.getResource("/icons/magic-wand-icon.png")));
+        setIconImage(Toolkit.getDefaultToolkit().getImage(MainWindow.class.getResource("/application/img/magic-wand-icon.png")));
         main = this;
 
         this.engine = engine;
@@ -357,10 +357,9 @@ public class MainWindow extends JFrame {
 
                             }
                             if (pass) {
-                                TabPanel panel = new TabPanel(main, engine, greenPath, redPath, tab_panel_number);
+                                engine.addSample(greenPath, redPath);
+                                TabPanel panel = new TabPanel(main, engine, tab_panel_number);
                                 tabbedPane.addTab("Sample " + counterSample++, null, panel, null);
-                                engine.addSample();
-                                panelArrayList.add(panel);
                                 for (int i = 0; i < engine.getGridProfile_Count(); i++)
                                 {
                                     panel.addToComboBox(engine.getGridProfile_Name(i), false);
@@ -368,23 +367,18 @@ public class MainWindow extends JFrame {
                                 tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
                                 engine.setSample_Gene_ListFile(tab_panel_number, genePath);
                                 tab_panel_number++;
+                                panelArrayList.add(panel);
                             }
-
                             return null;
                         }
 
                         @Override
                         public void done() {
-
                             importBar.setIndeterminate(false);
                             JOptionPane.showMessageDialog(null, "Import Complete.");
-
                         }
-
                     }
-
                     new ImportGene().execute();
-
                 }
 
             };
@@ -412,7 +406,7 @@ public class MainWindow extends JFrame {
 
                         @Override
                         public Void doInBackground() throws Exception {
-
+                            String exportFileNamePath = "";
                             try {
 
                                 filter = new FileNameExtensionFilter("Comma Separated Values file", "csv");
@@ -420,7 +414,7 @@ public class MainWindow extends JFrame {
 
                                 chooser.showSaveDialog(null);
                                 File f = chooser.getSelectedFile();
-                                String exportFileNamePath = f.getAbsolutePath();
+                                exportFileNamePath = f.getAbsolutePath();
 
                                 //CSVWriter.saveCSV(CSVData, exportFileNamePath);
 
@@ -428,26 +422,13 @@ public class MainWindow extends JFrame {
 
                                 JOptionPane.showMessageDialog(null, "No file selected.", "File warning",
                                         JOptionPane.WARNING_MESSAGE);
-
+                                exportFileNamePath = "";
                             }
                             if (exportFileNamePath != "")
                             {
                                 //TODO: Get focused TabPanel
                                 int focused_tab_num = 0;
-                                engine.File_ExportExpression_Open(focused_tab_num, exportFileNamePath);
-                                int gCount = engine.getSample_GridCount(focused_tab_num);
-                                int sCount;
-                                Object[] params;
-                                for (int i = 0; i < gCount; i++)
-                                {
-                                    sCount = engine.getSample_Grid_NumberOfSpots(focused_tab_num, i);
-                                    for (int j = 0; j < sCount; j++)
-                                    {
-                                        params = panelArrayList.get(focused_tab_num).getCellData(i, j);
-                                        engine.File_ExportExpression_WriteLine(i, j, params);
-                                    }
-                                }
-                                engine.File_ExportExpression_Close();
+                                engine.File_ExportExpressionData(exportFileNamePath, focused_tab_num);
                             }
 
                             return null;

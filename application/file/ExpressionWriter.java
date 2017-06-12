@@ -2,38 +2,22 @@ package application.file;
 
 import java.io.BufferedWriter;
 import java.io.FileWriter;
+import java.io.IOException;
 
 /**
  * Created by Lukas Pihl
  */
 public class ExpressionWriter
 {
-    private int sample_number;
-    private String file_path;
     private BufferedWriter writer;
 
-    public ExpressionWriter(int sampleNum, String filePath)
+    public ExpressionWriter(String filePath) throws IOException
     {
-        this.sample_number = sampleNum;
-        this.file_path = filePath;
-        writer = null;
+        writer = new BufferedWriter(new FileWriter(filePath));
     }
 
-    public void writeLine(String geneName, double ratio)
+    public void writeLine(String line) throws  IOException
     {
-        try
-        {
-            writer = new BufferedWriter(new FileWriter(file_path));
-            writer.write(geneName + "," + ratio + "\n");
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-    }
-
-    public int getSampleNumber()
-    {
-        return sample_number;
+        writer.write(line);
     }
 }

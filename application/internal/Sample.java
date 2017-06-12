@@ -3,6 +3,8 @@ package application.internal;
 import java.awt.*;
 
 import application.GeneImageAspect;
+import ij.ImagePlus;
+import ij.io.Opener;
 
 /**
  * Created by Lukas Pihl
@@ -10,11 +12,18 @@ import application.GeneImageAspect;
 public class Sample
 {
     private GridManager grid_manager;
+    private FlagManager flag_manager;
     private int current_grid_number = 0;
     private int current_spot_number = 0;
     private GeneData gene_data;
     private SingleGeneImage current_gene;
     private GeneList gene_list;
+    private ImagePlus green_IP = null;
+    private ImagePlus red_IP = null;
+
+    private int segment_method = 101;
+    private int ratio_method = 1;
+    private int method_threshold = 10;
 
     /**
      * Creates new sample with default settings.
@@ -22,12 +31,193 @@ public class Sample
     public Sample()
     {
         grid_manager = new GridManager();
+        flag_manager = new FlagManager();
         gene_list = null;
+    }
+
+    /**
+     * Creates new sample with image pixels loaded.
+     */
+    public Sample(String greenPath, String redPath)
+    {
+        this();
+        loadImagePlus(greenPath, redPath);
+    }
+
+    public void setRatioMethod(int method)
+    {
+        ratio_method = method;
+    }
+
+    public void setSegmentationMethod(int method)
+    {
+        segment_method = method;
+    }
+
+    public int getRatioMethod()
+    {
+        return ratio_method;
+    }
+
+    public int getSegmentationMethod()
+    {
+        return segment_method;
+    }
+
+    public void setMethodThreshold(int threshold)
+    {
+        method_threshold = threshold;
+    }
+
+    public int getMethodThreshold()
+    {
+        return method_threshold;
+    }
+
+    public Object[] getParameters()
+    {
+        Object[] params = null;
+        if (segment_method == GeneImageAspect.FIXED_CIRCLE)
+        {
+            params = new Object[]{6};
+        }
+        else if (segment_method == GeneImageAspect.SEEDED_REGION)
+        {
+            params = new Object[]{getMethodThreshold()};
+        }
+        else if (segment_method == GeneImageAspect.ADAPTIVE_CIRCLE)
+        {
+            params = new Object[]{3, 8, getMethodThreshold()};
+        }
+
+        return params;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Image Functions
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public void loadImagePlus(String greenPath, String redPath) {
+        Opener greenImage = new Opener();
+        Opener redImage = new Opener();
+        green_IP = greenImage.openImage(greenPath);
+        red_IP = redImage.openImage(redPath);
+    }
+
+    public int[][] getGreenPixels()
+    {
+        int[][] grnPixels = new int[green_IP.getHeight()][green_IP.getWidth()];
+
+        for(int i = 0; i < green_IP.getHeight(); i++)
+        {
+            for (int j = 0; j < green_IP.getWidth(); j++)
+            {
+                grnPixels[i][j] = green_IP.getProcessor().getPixel(j,i);
+            }
+        }
+
+        return grnPixels;
+    }
+
+    public int[][] getRedPixels()
+    {
+        int[][] redPixels = new int[red_IP.getHeight()][red_IP.getWidth()];
+
+        for(int i = 0; i < red_IP.getHeight(); i++)
+        {
+            for(int j = 0; j < red_IP.getWidth(); j++)
+            {
+                redPixels[i][j] = red_IP.getProcessor().getPixel(j,i);
+            }
+        }
+
+        return redPixels;
+    }
+
+    public Image getGreenImage()
+    {
+        return green_IP.getImage();
+    }
+
+    public Image getRedImage()
+    {
+        return red_IP.getImage();
+    }
+
+    public ImagePlus getGreenImagePlus()
+    {
+        return green_IP;
+    }
+
+    public ImagePlus getRedImagePlus()
+    {
+        return red_IP;
+    }
+
+    public int[] getGreenCellPixels(int grid, int spotNum){
+        Polygon p = this.getGrid_Spot(grid, spotNum);
+        int w = Math.abs(p.xpoints[1]-p.xpoints[0]);
+        int h = Math.abs(p.ypoints[2]-p.ypoints[0]);
+        int[] pixels = new int[w*h];
+
+        int[][] RawPixels = this.getGreenPixels();
+        try{
+            int k = 0;
+            for(int y = p.ypoints[0]; y < p.ypoints[2]; y++) {
+                for(int x =p.xpoints[0]; x < p.xpoints[1]; x++) {
+                    pixels[k++] = RawPixels[y][x];
+                }
+
+            }
+            return pixels;
+
+        }catch(Exception e3){System.out.print("Error");}
+
+        return null;
+    }
+
+    public int[] getRedCellPixels(int grid, int spotNum){
+        Polygon p = this.getGrid_Spot(grid, spotNum);
+        int w = Math.abs(p.xpoints[1]-p.xpoints[0]);
+        int h = Math.abs(p.ypoints[2]-p.ypoints[0]);
+        int[] pixels = new int[w*h];
+
+        int[][] RawPixels = this.getGreenPixels();
+        try{
+            int k = 0;
+            for(int y = p.ypoints[0]; y < p.ypoints[2]; y++) {
+                for(int x =p.xpoints[0]; x < p.xpoints[1]; x++) {
+                    pixels[k++] = RawPixels[y][x];
+                }
+
+            }
+            return pixels;
+
+        }catch(Exception e3){System.out.print("Error");}
+
+        return null;
+    }
+
+    public int getCellHeight(int grid, int spotNum)
+    {
+        Polygon p = this.getGrid_Spot(grid, spotNum);
+        return Math.abs(p.ypoints[2]-p.ypoints[0]);
+    }
+
+    public int getCellWidth(int grid, int spotNum)
+    {
+        Polygon p = this.getGrid_Spot(grid, spotNum);
+        return Math.abs(p.xpoints[1]-p.xpoints[0]);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Grid Manager Functions
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public GridManager getGridManager()
+    {
+        return grid_manager;
+    }
 
     /**
      * Gets the number of grids.
@@ -364,17 +554,17 @@ public class Sample
      * @param aspect Method to use to get ratio.
      * @return The ratio for the gene data.
      */
-    public int getGene_Ratio(GeneImageAspect aspect)
+    public int getGene_Ratio(int aspect)
     {
         switch (aspect)
         {
-            case AVG_SIGNAL:
+            case GeneImageAspect.AVG_SIGNAL:
                 return current_gene.AVG_SIGNAL;
-            case AVG_SUBTRACT_BG:
+            case GeneImageAspect.AVG_SUBTRACT_BG:
                 return current_gene.AVG_SUBTRACT_BG;
-            case TOTAL_SIGNAL:
+            case GeneImageAspect.TOTAL_SIGNAL:
                 return current_gene.TOTAL_SIGNAL;
-            case TOTAL_SUBTRACT_BG:
+            case GeneImageAspect.TOTAL_SUBTRACT_BG:
                 return current_gene.TOTAL_SUBTRACT_BG;
             default:
                 return 0;
@@ -451,5 +641,14 @@ public class Sample
     public double getGene_RedForegroundAvg()
     {
         return gene_data.getRedForegroundAvg();
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Flag Manager Functions
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+    public FlagManager getFlagManager()
+    {
+        return flag_manager;
     }
 }

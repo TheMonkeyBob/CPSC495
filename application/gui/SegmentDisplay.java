@@ -54,7 +54,7 @@ public class SegmentDisplay extends JPanel {
     private int seededRegion[][];
     private int radius = 5;
     private Point center=null;
-    private GeneImageAspect shapeDrawn = GeneImageAspect.FIXED_CIRCLE;
+    private int shapeDrawn = GeneImageAspect.FIXED_CIRCLE;
 
     private int myNumber;
 
@@ -71,15 +71,16 @@ public class SegmentDisplay extends JPanel {
 
     /**
      * Constructs the display for the given image and grid manager
-     * @param im microarray image to be displayed for segmentation
+     * @param imp microarray image to be displayed for segmentation
      */
-    public SegmentDisplay(int number, Image im, Engine engine) {
+    public SegmentDisplay(int number, ImagePlus imp, Engine engine) {
         this.engine = engine;
         myNumber = number;
 
         engine.setSample_CurrentGrid(myNumber, 0);
         engine.setSample_CurrentSpot(myNumber, 0);
-        ip = new ImagePlus("Overlayed",im);
+        ip = imp;
+        //ip = new ImagePlus("Overlayed",im);
         ic = new ImageCanvas(ip){
             public void paintComponent(Graphics g){
                 super.paintComponent(g);

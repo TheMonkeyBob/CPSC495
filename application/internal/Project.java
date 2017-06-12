@@ -1,9 +1,9 @@
 package application.internal;
 
+import ij.ImagePlus;
+
 import java.awt.*;
 import java.util.ArrayList;
-
-import application.GeneImageAspect;
 
 /**
  * Created by Lukas Pihl
@@ -132,6 +132,13 @@ public class Project
     public void addSample()
     {
         sample_list.add(new Sample());
+    }
+
+    public void addSample(String greenPath, String redPath) { sample_list.add(new Sample(greenPath, redPath)); }
+
+    public Sample getSample(int sample)
+    {
+        return sample_list.get(sample);
     }
 
     /**
@@ -431,7 +438,7 @@ public class Project
      * @param aspect Method to use to get ratio.
      * @return The ratio for the gene data.
      */
-    public double getSample_Gene_Ratio(int sample, GeneImageAspect aspect)
+    public double getSample_Gene_Ratio(int sample, int aspect)
     {
         return sample_list.get(sample).getGene_Ratio(aspect);
     }
@@ -558,5 +565,40 @@ public class Project
     public int getSampleCurrentSpotNumber(int sample)
     {
         return sample_list.get(sample).getCurrentSpotNumber();
+    }
+
+    public void setSample_RatioMethod(int sample, int method)
+    {
+        sample_list.get(sample).setRatioMethod(method);
+    }
+
+    public void setSample_SegmentationMethod(int sample, int method)
+    {
+        sample_list.get(sample).setSegmentationMethod(method);
+    }
+
+    public void setSample_MethodThreshold(int sample, int threshold)
+    {
+        sample_list.get(sample).setMethodThreshold(threshold);
+    }
+
+    public Image getSample_GreenImage(int sample)
+    {
+        return sample_list.get(sample).getGreenImage();
+    }
+
+    public Image getSample_RedImage(int sample)
+    {
+        return sample_list.get(sample).getRedImage();
+    }
+
+    public ImagePlus getSample_GreenImagePlus(int sample)
+    {
+        return sample_list.get(sample).getGreenImagePlus();
+    }
+
+    public ImagePlus getSample_RedImagePlus(int sample)
+    {
+        return sample_list.get(sample).getRedImagePlus();
     }
 }
