@@ -1,230 +1,219 @@
 package application.gui;
 
 import javax.swing.*;
-import javax.swing.text.NumberFormatter;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.KeyEvent;
+import java.util.ArrayList;
 
-class GridPanel extends JPanel {
+/**
+ * Created by Lukas Pihl
+ */
+public class GridPanel extends JPanel
+{
+    private JButton button_AddGrid;
+    private JButton button_RemoveGrid;
+    private JButton button_Settings;
+    private JButton button_SaveGrids;
+    private JButton button_LoadGrids;
+    private JButton button_MoveGridTo;
+    private JButton button_MoveGrid;
+    private JButton button_RotateGrid;
+    private JButton button_AdvancedSettings;
+    private JButton button_ResizeGrid;
+    private JButton button_ZoomToGrid;
+    private JPanel panel_Grids;
+    private JScrollPane scrollPane_Grids;
 
-    private static final long serialVersionUID = 1L;
-    private JButton btnSet;
-    private JButton btnAdvanced;
-    private JButton btnCancel;
-    private JLabel lblName;
-    private JLabel lblClickTopLeft;
-    private JLabel lblClickTopRight;
-    private JLabel lblClickBottom;
-    private JLabel lblNumberRows;
-    private JLabel lblNumberColumns;
-    private JFormattedTextField tfRows;
-    private JFormattedTextField tfColumns;
+    private final int X_START = 10;
+    private final int Y_START = 20;
 
-    private int myNumber;
-    private int mode = 0;
-    private boolean setFlag = false;
-    private boolean awaitingData = false;
+    private TabPanel parent_panel;
+    private MainWindow main;
+    private ArrayList<GridPanelPanel> grid_list;
+    private GridPanelPanel new_gpp;
 
-    private int topLeftX_true;
-    private int topLeftY_true;
-    private int topLeftX_temp;
-    private int topLeftY_temp;
-    private int topRightX_true;
-    private int topRightY_true;
-    private int topRightX_temp;
-    private int topRightY_temp;
-    private int bottomX_true;
-    private int bottomY_true;
-    private int bottomX_temp;
-    private int bottomY_temp;
-    private int rows_true;
-    private int rows_temp;
-    private int columns_true;
-    private int columns_temp;
-
-    private TabPanel myTabPanel;
-
-    public GridPanel(TabPanel tab_panel, int num) {
-        myNumber = num;
-        myTabPanel = tab_panel;
+    public GridPanel(MainWindow main, TabPanel parent)
+    {
+        this.main = main;
+        parent_panel = parent;
         setup();
     }
 
-    private void setup() {
-        this.setMinimumSize(new Dimension(40, 300));
-        btnSet = new JButton("Set");
-        btnSet.addActionListener(setButton -> {
-            progressMode();
-        });
-        btnAdvanced = new JButton("Advanced");
-        btnAdvanced.addActionListener(advancedButton -> {
-            openPopup();
-        });
-        btnCancel = new JButton("Cancel");
-        btnCancel.addActionListener(cancelButton -> {
-            cancelSetting();
-        });
-        lblName = new JLabel("Grid " + myNumber);
-        lblClickTopLeft = new JLabel("Click the centre of the top left spot.");
-        lblClickTopRight = new JLabel("Click the centre of the top right spot.");
-        lblClickBottom = new JLabel("Click the centre of a spot in the bottommost row.");
-        lblNumberRows = new JLabel("Enter the number of rows.");
-        lblNumberColumns = new JLabel("Enter the number of columns.");
-        tfRows = new JFormattedTextField(new NumberFormatter());
-        tfRows.setMinimumSize(new Dimension(50, 20));
-        tfRows.setPreferredSize(new Dimension(50, 20));
-        tfColumns = new JFormattedTextField();
-        tfColumns.setMinimumSize(new Dimension(50, 20));
-        tfColumns.setPreferredSize(new Dimension(50, 20));
-
-        tfRows.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "rowInput");
-        tfRows.getActionMap().put("rowInput", new AbstractAction() {
-
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                rows_temp = Integer.parseInt(tfRows.getText());
-                progressMode();
-            }
-        });
-        tfColumns.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "columnInput");
-        tfColumns.getActionMap().put("columnInput", new AbstractAction() {
-
-            private static final long serialVersionUID = 1L;
-
-            @Override
-            public void actionPerformed(ActionEvent e) {
-                columns_temp = Integer.parseInt(tfColumns.getText());
-                progressMode();
-            }
-        });
-
-        add(lblName);
-        add(btnSet);
-        this.setVisible(true);
-    }
-
-    public boolean isAwaitingData() {
-        return awaitingData;
-    }
-
-    public void addCoordinates(int x, int y) {
-        switch (mode) {
-        case 1:
-            topLeftX_temp = x;
-            topLeftY_temp = y;
-            break;
-        case 2:
-            topRightX_temp = x;
-            topRightY_temp = y;
-            break;
-        case 3:
-            bottomX_temp = x;
-            bottomY_temp = y;
-            break;
-        default:
-            break;
-        }
-        progressMode();
-    }
-
-    public void progressMode() {
-        mode++;
-        removeAll();
-        add(lblName);
-
-        switch (mode) {
-        case 1:
-            add(btnCancel);
-            add(lblClickTopLeft);
-            awaitingData = true;
-            break;
-        case 2:
-            add(btnCancel);
-            add(lblClickTopRight);
-            break;
-        case 3:
-            add(btnCancel);
-            add(lblClickBottom);
-            break;
-        case 4:
-            add(btnCancel);
-            add(tfRows);
-            add(lblNumberRows);
-            break;
-        case 5:
-            add(btnCancel);
-            add(tfColumns);
-            add(lblNumberColumns);
-            awaitingData = false;
-            break;
-        case 6:
-            add(btnSet);
-            add(btnAdvanced);
-            setFlag = true;
-            commitValues();
-            myTabPanel.refreshSegmentation();
-            break;
-        case 7:
-            mode = 0;
-            progressMode();
-            break;
-        default:
-            mode = 0;
-            progressMode();
-            break;
-        }
-        updateUI();
-    }
-
-    public void cancelSetting() {
-        mode = 0;
-        removeAll();
-        add(lblName);
-        add(btnSet);
-        awaitingData = false;
-        if (setFlag) {
-            add(btnAdvanced);
-        }
-    }
-
-    private void openPopup()
+    private void setup()
     {
-        GridAdvancedDialog god = new GridAdvancedDialog(myTabPanel.main);
-        god.setOptions(topLeftX_true, topLeftY_true, topRightX_true, topRightY_true, bottomX_true, bottomY_true,
-                columns_true, rows_true);
-        god.setModal(true);
-        god.pack();
-        god.setVisible(true);
-        if (god.getOK()) {
-            topLeftX_temp = god.tlX;
-            topLeftY_temp = god.tlY;
-            topRightX_temp = god.trX;
-            topRightY_temp = god.trY;
-            bottomX_temp = god.bX;
-            bottomY_temp = god.bY;
-            columns_temp = god.columns;
-            rows_temp = god.rows;
-            commitValues();
-            myTabPanel.refreshSegmentation();
+        grid_list = new ArrayList<>();
+        new_gpp = null;
+
+        button_ZoomToGrid = new JButton();
+        button_ZoomToGrid.setIcon(ImgManager.GridZoomToButton_Up);
+        button_ZoomToGrid.setDisabledIcon(ImgManager.GridZoomToButton_Down);
+        button_ZoomToGrid.setDisabledSelectedIcon(ImgManager.GridZoomToButton_Down);
+        button_ZoomToGrid.setPressedIcon(ImgManager.GridZoomToButton_Down);
+        button_ZoomToGrid.setRolloverIcon(ImgManager.GridZoomToButton_Up);
+        button_ZoomToGrid.setRolloverSelectedIcon(ImgManager.GridZoomToButton_Up);
+        button_ZoomToGrid.setSelectedIcon(ImgManager.GridZoomToButton_Up);
+        button_ZoomToGrid.setBounds(X_START, Y_START, 30, 30);
+        button_ZoomToGrid.setBorder(BorderFactory.createEmptyBorder());
+        this.add(button_ZoomToGrid);
+
+        button_MoveGrid = new JButton();
+        button_MoveGrid.setIcon(ImgManager.GridMoveButton_Up);
+        button_MoveGrid.setDisabledIcon(ImgManager.GridMoveButton_Down);
+        button_MoveGrid.setDisabledSelectedIcon(ImgManager.GridMoveButton_Down);
+        button_MoveGrid.setPressedIcon(ImgManager.GridMoveButton_Down);
+        button_MoveGrid.setRolloverIcon(ImgManager.GridMoveButton_Up);
+        button_MoveGrid.setRolloverSelectedIcon(ImgManager.GridMoveButton_Up);
+        button_MoveGrid.setSelectedIcon(ImgManager.GridMoveButton_Up);
+        button_MoveGrid.setBounds(button_ZoomToGrid.getX() + button_ZoomToGrid.getWidth() + 5, Y_START, 30, 30);
+        button_MoveGrid.setBorder(BorderFactory.createEmptyBorder());
+        this.add(button_MoveGrid);
+
+        button_RotateGrid = new JButton();
+        button_RotateGrid.setIcon(ImgManager.GridRotateButton_Up);
+        button_RotateGrid.setDisabledIcon(ImgManager.GridRotateButton_Down);
+        button_RotateGrid.setDisabledSelectedIcon(ImgManager.GridRotateButton_Down);
+        button_RotateGrid.setPressedIcon(ImgManager.GridRotateButton_Down);
+        button_RotateGrid.setRolloverIcon(ImgManager.GridRotateButton_Up);
+        button_RotateGrid.setRolloverSelectedIcon(ImgManager.GridRotateButton_Up);
+        button_RotateGrid.setSelectedIcon(ImgManager.GridRotateButton_Up);
+        button_RotateGrid.setBounds(button_MoveGrid.getX() + button_MoveGrid.getWidth() + 5, Y_START, 30, 30);
+        button_RotateGrid.setBorder(BorderFactory.createEmptyBorder());
+        this.add(button_RotateGrid);
+
+        button_ResizeGrid = new JButton();
+        button_ResizeGrid.setIcon(ImgManager.GridResizeButton_Up);
+        button_ResizeGrid.setDisabledIcon(ImgManager.GridResizeButton_Down);
+        button_ResizeGrid.setDisabledSelectedIcon(ImgManager.GridResizeButton_Down);
+        button_ResizeGrid.setPressedIcon(ImgManager.GridResizeButton_Down);
+        button_ResizeGrid.setRolloverIcon(ImgManager.GridResizeButton_Up);
+        button_ResizeGrid.setRolloverSelectedIcon(ImgManager.GridResizeButton_Up);
+        button_ResizeGrid.setSelectedIcon(ImgManager.GridResizeButton_Up);
+        button_ResizeGrid.setBounds(button_RotateGrid.getX() + button_RotateGrid.getWidth() + 5, Y_START, 30, 30);
+        button_ResizeGrid.setBorder(BorderFactory.createEmptyBorder());
+        this.add(button_ResizeGrid);
+
+        button_MoveGridTo = new JButton();
+        button_MoveGridTo.setIcon(ImgManager.GridMoveToButton_Up);
+        button_MoveGridTo.setDisabledIcon(ImgManager.GridMoveToButton_Down);
+        button_MoveGridTo.setDisabledSelectedIcon(ImgManager.GridMoveToButton_Down);
+        button_MoveGridTo.setPressedIcon(ImgManager.GridMoveToButton_Down);
+        button_MoveGridTo.setRolloverIcon(ImgManager.GridMoveToButton_Up);
+        button_MoveGridTo.setRolloverSelectedIcon(ImgManager.GridMoveToButton_Up);
+        button_MoveGridTo.setSelectedIcon(ImgManager.GridMoveToButton_Up);
+        button_MoveGridTo.setBounds(button_ResizeGrid.getX() + button_ResizeGrid.getWidth() + 5, Y_START, 30, 30);
+        button_MoveGridTo.setBorder(BorderFactory.createEmptyBorder());
+        this.add(button_MoveGridTo);
+
+        button_AdvancedSettings = new JButton();
+        button_AdvancedSettings.setIcon(ImgManager.GridAdvancedButton_Up);
+        button_AdvancedSettings.setDisabledIcon(ImgManager.GridAdvancedButton_Down);
+        button_AdvancedSettings.setDisabledSelectedIcon(ImgManager.GridAdvancedButton_Down);
+        button_AdvancedSettings.setPressedIcon(ImgManager.GridAdvancedButton_Down);
+        button_AdvancedSettings.setRolloverIcon(ImgManager.GridAdvancedButton_Up);
+        button_AdvancedSettings.setRolloverSelectedIcon(ImgManager.GridAdvancedButton_Up);
+        button_AdvancedSettings.setSelectedIcon(ImgManager.GridAdvancedButton_Up);
+        button_AdvancedSettings.setBounds(button_MoveGridTo.getX() + button_MoveGridTo.getWidth() + 5, Y_START, 30, 30);
+        button_AdvancedSettings.setBorder(BorderFactory.createEmptyBorder());
+        this.add(button_AdvancedSettings);
+
+        button_AddGrid = new JButton();
+        button_AddGrid.setIcon(ImgManager.GridAddButton_Up);
+        button_AddGrid.setDisabledIcon(ImgManager.GridAddButton_Down);
+        button_AddGrid.setDisabledSelectedIcon(ImgManager.GridAddButton_Down);
+        button_AddGrid.setPressedIcon(ImgManager.GridAddButton_Down);
+        button_AddGrid.setRolloverIcon(ImgManager.GridAddButton_Up);
+        button_AddGrid.setRolloverSelectedIcon(ImgManager.GridAddButton_Up);
+        button_AddGrid.setSelectedIcon(ImgManager.GridAddButton_Up);
+        button_AddGrid.setBounds(button_AdvancedSettings.getX() + button_AdvancedSettings.getWidth() + 25, Y_START, 30,
+                30);
+        button_AddGrid.setBorder(BorderFactory.createEmptyBorder());
+        button_AddGrid.addActionListener(AddGridButtonAction -> newGridPanelPanel());
+        this.add(button_AddGrid);
+
+        button_RemoveGrid = new JButton();
+        button_RemoveGrid.setIcon(ImgManager.GridRemoveButton_Up);
+        button_RemoveGrid.setDisabledIcon(ImgManager.GridRemoveButton_Down);
+        button_RemoveGrid.setDisabledSelectedIcon(ImgManager.GridRemoveButton_Down);
+        button_RemoveGrid.setPressedIcon(ImgManager.GridRemoveButton_Down);
+        button_RemoveGrid.setRolloverIcon(ImgManager.GridRemoveButton_Up);
+        button_RemoveGrid.setRolloverSelectedIcon(ImgManager.GridRemoveButton_Up);
+        button_RemoveGrid.setSelectedIcon(ImgManager.GridRemoveButton_Up);
+        button_RemoveGrid.setBounds(button_AddGrid.getX() + button_AddGrid.getWidth() + 5, Y_START, 30, 30);
+        button_RemoveGrid.setBorder(BorderFactory.createEmptyBorder());
+        this.add(button_RemoveGrid);
+
+        button_Settings = new JButton();
+        button_Settings.setIcon(ImgManager.GridSettingsButton_Up);
+        button_Settings.setDisabledIcon(ImgManager.GridSettingsButton_Down);
+        button_Settings.setDisabledSelectedIcon(ImgManager.GridSettingsButton_Down);
+        button_Settings.setPressedIcon(ImgManager.GridSettingsButton_Down);
+        button_Settings.setRolloverIcon(ImgManager.GridSettingsButton_Up);
+        button_Settings.setRolloverSelectedIcon(ImgManager.GridSettingsButton_Up);
+        button_Settings.setSelectedIcon(ImgManager.GridSettingsButton_Up);
+        button_Settings.setBounds(button_RemoveGrid.getX() + button_RemoveGrid.getWidth() + 5, Y_START, 30, 30);
+        button_Settings.setBorder(BorderFactory.createEmptyBorder());
+        this.add(button_Settings);
+
+        button_SaveGrids = new JButton();
+        button_SaveGrids.setIcon(ImgManager.GridSaveButton_Up);
+        button_SaveGrids.setDisabledIcon(ImgManager.GridSaveButton_Down);
+        button_SaveGrids.setDisabledSelectedIcon(ImgManager.GridSaveButton_Down);
+        button_SaveGrids.setPressedIcon(ImgManager.GridSaveButton_Down);
+        button_SaveGrids.setRolloverIcon(ImgManager.GridSaveButton_Up);
+        button_SaveGrids.setRolloverSelectedIcon(ImgManager.GridSaveButton_Up);
+        button_SaveGrids.setSelectedIcon(ImgManager.GridSaveButton_Up);
+        button_SaveGrids.setBounds(button_Settings.getX() + button_Settings.getWidth() + 25, Y_START, 30, 30);
+        button_SaveGrids.setBorder(BorderFactory.createEmptyBorder());
+        this.add(button_SaveGrids);
+
+        button_LoadGrids = new JButton();
+        button_LoadGrids.setIcon(ImgManager.GridLoadButton_Up);
+        button_LoadGrids.setDisabledIcon(ImgManager.GridLoadButton_Down);
+        button_LoadGrids.setDisabledSelectedIcon(ImgManager.GridLoadButton_Down);
+        button_LoadGrids.setPressedIcon(ImgManager.GridLoadButton_Down);
+        button_LoadGrids.setRolloverIcon(ImgManager.GridLoadButton_Up);
+        button_LoadGrids.setRolloverSelectedIcon(ImgManager.GridLoadButton_Up);
+        button_LoadGrids.setSelectedIcon(ImgManager.GridLoadButton_Up);
+        button_LoadGrids.setBounds(button_SaveGrids.getX() + button_SaveGrids.getWidth() + 5, Y_START, 30, 30);
+        button_LoadGrids.setBorder(BorderFactory.createEmptyBorder());
+        this.add(button_LoadGrids);
+
+        panel_Grids = new JPanel();
+        scrollPane_Grids = new JScrollPane(panel_Grids);
+        scrollPane_Grids.setBounds(X_START, button_ZoomToGrid.getY() + button_ZoomToGrid.getHeight() + 5, 696, 220);
+        this.add(scrollPane_Grids);
+    }
+
+    public void coordinatesFound(int x, int y)
+    {
+        if (new_gpp != null)
+        {
+            new_gpp.addCoordinates(x, y);
         }
     }
 
-    //Values are set to not allow rotating
-    //Logic will need to be changed if rotation added
-    private void commitValues() {
-        topLeftX_true = topLeftX_temp;
-        topLeftY_true = topLeftY_temp;
-        topRightX_true = topRightX_temp;
-        topRightY_true = topRightY_temp;
-        bottomX_true = bottomX_temp;
-        bottomY_true = bottomY_temp;
-        rows_true = rows_temp;
-        columns_true = columns_temp;
-        //TODO: setup proper values
-        myTabPanel.drawGrid(myNumber-1, topLeftX_true, topLeftY_true, topRightX_true, topLeftY_true, topLeftX_true,
-                bottomY_true, topRightX_true, bottomY_true, rows_true, columns_true);
+    private void newGridPanelPanel()
+    {
+        new_gpp = new GridPanelPanel(this, grid_list.size()+1);
+        panel_Grids.removeAll();
+        panel_Grids.add(new_gpp);
+    }
+
+    public void finalizeGridPanelPanel()
+    {
+        if (new_gpp != null)
+        {
+            grid_list.add(new_gpp);
+            new_gpp = null;
+            panel_Grids.removeAll();
+            for (GridPanelPanel gpp: grid_list)
+            {
+                panel_Grids.add(gpp);
+            }
+        }
+    }
+
+    public void addGrid(int num, int tlX, int tlY, int trX, int trY, int blX, int blY, int brX, int brY, int rows,
+                         int columns)
+    {
+        parent_panel.addGrid(num, tlX, tlY, trX, trY, blX, blY, brX, brY, rows, columns);
     }
 }

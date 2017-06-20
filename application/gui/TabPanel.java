@@ -36,7 +36,7 @@ class TabPanel extends JPanel {
 
     private JScrollPane gridScrollPane;
     private JPanel gridScrollPanePanel;
-    private ArrayList<GridPanel> gridPanelsList = new ArrayList<>();
+    private ArrayList<GridPanelPanel> gridPanelsList = new ArrayList<>();
     private Border blackline = BorderFactory.createLineBorder(Color.black);
     private JTextArea textArea_1;
     private JTextArea textArea_2;
@@ -51,7 +51,7 @@ class TabPanel extends JPanel {
     private JSlider slidderSeededThreshold;
     private JSpinner spnGrid;
     private JSpinner spnSpot;
-    private JPanel segment;
+    private SegmentPanel segment;
 
     public JScrollPane scrollGreen;
     private JScrollPane scrollRed;
@@ -60,6 +60,7 @@ class TabPanel extends JPanel {
     private ImagePlus ipGrn;
     private ImagePlus ipRed;
     private int segmentMode;
+    private GridPanel panel_Grid;
 
     /**Automatic Flagging Options Dialog associated with the SegmentFrame associated with this SegmentPanel*/
     //protected AutoFlaggingOptionsDialog afod;
@@ -79,7 +80,7 @@ class TabPanel extends JPanel {
 
     /** polygon containing the coordinates of current spot cell */
     protected Polygon cell;
-    private int w, h, newTopLeftX, newTopLeftY, gridNum, spotNum;
+    private int newTopLeftX, newTopLeftY, gridNum, spotNum;
 
     private void setup() {
         ratioMethod = GeneImageAspect.TOTAL_SIGNAL;
@@ -87,13 +88,14 @@ class TabPanel extends JPanel {
         this.setBorder(blackline);
         GridBagLayout gbl_panel = new GridBagLayout();
         gbl_panel.columnWidths = new int[] { 550, 325, 325 };
-        gbl_panel.rowHeights = new int[] { 5, 290, 290, 290, 35 };
+        gbl_panel.rowHeights = new int[] { 5, 290, 100, 440, 35 };
         gbl_panel.columnWeights = new double[] { 1.0 };
         gbl_panel.rowWeights = new double[] { Double.MIN_VALUE };
         this.setLayout(gbl_panel);
 
         imageDisplayPanel = new ImageDisplayPanel(engine, buildImage(), myNumber);
-        imageDisplayPanel.getCanvas().addMouseListener(new MouseListener() {
+        imageDisplayPanel.getCanvas().addMouseListener(new MouseListener()
+        {
             @Override
             public void mouseClicked(MouseEvent e) {
                 coordinateFound(xCoordinate(e.getX()), yCoordinate(e.getY()));
@@ -153,32 +155,34 @@ class TabPanel extends JPanel {
         this.add(lblZoomLevel, gbc_lblZoomLevel);
 
         // Gridding panel starts here
-        JPanel gridding = new JPanel();
+        panel_Grid = new GridPanel(main, this);
         TitledBorder grid_title = BorderFactory.createTitledBorder(blackline, "Gridding");
         grid_title.setTitleJustification(TitledBorder.LEFT);
-        gridding.setBorder(grid_title);
-        gridding.setLayout(null);
+        panel_Grid.setBorder(grid_title);
+        panel_Grid.setLayout(null);
         GridBagConstraints gbc_gridding = new GridBagConstraints();
         gbc_gridding.insets = new Insets(0, 5, 5, 0);
         gbc_gridding.fill = GridBagConstraints.BOTH;
         gbc_gridding.gridx = 1;
         gbc_gridding.gridy = 1;
-        gbc_gridding.gridheight = 1;
+        gbc_gridding.gridheight = 2;
         gbc_gridding.gridwidth = 2;
         gbc_gridding.weightx = 1.0;
         gbc_gridding.weighty = 1.0;
         gbc_gridding.insets = new Insets(0, 5, 5, 5); // top, left, bottom,
         // right
-        this.add(gridding, gbc_gridding);
+        this.add(panel_Grid, gbc_gridding);
 
+        /*
         JLabel lblNewLabel = new JLabel("Select a previously saved grid or click Add to create a new one.");
         lblNewLabel.setBounds(10, 20, 360, 14);
-        gridding.add(lblNewLabel);
+        panel_Grid.add(lblNewLabel);
 
         comboBox = new JComboBox<>();
         comboBox.addItem("Previously saved grid.");
         comboBox.setBounds(10, 45, 150, 20);
-        comboBox.addActionListener(changedSelection -> {
+        comboBox.addActionListener(changedSelection ->
+        {
             if (!comboboxIsChanging && comboBox.getSelectedIndex() != selectedProfileNum)
             {
                 if (comboBox.getSelectedIndex() == 0)
@@ -195,7 +199,8 @@ class TabPanel extends JPanel {
                                         + "This cannot be undone. Are you sure you want to change the profile?",
                                 "Profile Change!", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null,
                                 null);
-                        if (selection == JOptionPane.OK_OPTION) {
+                        if (selection == JOptionPane.OK_OPTION)
+                        {
                             int i = comboBox.getSelectedIndex()-1;
                             engine.setSample_GridCount(myNumber, engine.getGridProfile_Number(i));
                             engine.setSample_GridHorizontal(myNumber, engine.getGridProfile_Horizontal(i));
@@ -223,17 +228,19 @@ class TabPanel extends JPanel {
                 }
             }
         });
-        gridding.add(comboBox);
+        panel_Grid.add(comboBox);
 
         JButton btnAdd = new JButton("Add");
-        btnAdd.addActionListener(addBut -> {
+        btnAdd.addActionListener(addBut ->
+        {
             GridSetupDialog god = new GridSetupDialog(main);
             god.setOptions("", engine.getSample_GridCount(myNumber), engine.getSample_GridHorizontal(myNumber),
                     engine.getSample_GridVertical(myNumber), engine.getSample_GridDirection(myNumber));
             god.setModal(true);
             god.pack();
             god.setVisible(true);
-            if (god.getOK()) {
+            if (god.getOK())
+            {
                 comboboxIsChanging = true;
                 int cont = JOptionPane.YES_OPTION;
                 // TODO Deletion warning commented out for now
@@ -245,7 +252,8 @@ class TabPanel extends JPanel {
                 // Grids And All Data Related To Them"), "Warning! You May Be
                 // Deleting Important Data", JOptionPane.YES_NO_OPTION,
                 // JOptionPane.WARNING_MESSAGE);
-                if (cont == JOptionPane.YES_OPTION) {
+                if (cont == JOptionPane.YES_OPTION)
+                {
                     engine.setSample_GridCount(myNumber, god.getGridNum());
                     engine.setSample_GridHorizontal(myNumber, god.getHorizontal());
                     engine.setSample_GridVertical(myNumber, god.getVertical());
@@ -260,11 +268,13 @@ class TabPanel extends JPanel {
             }
         });
         btnAdd.setBounds(169, 45, 60, 23);
-        gridding.add(btnAdd);
+        panel_Grid.add(btnAdd);
 
         JButton btnModify = new JButton("Modify");
-        btnModify.addActionListener(modBut -> {
-            if (comboBox.getSelectedIndex() != 0) {
+        btnModify.addActionListener(modBut ->
+        {
+            if (comboBox.getSelectedIndex() != 0)
+            {
                 GridSetupDialog god = new GridSetupDialog(main);
                 god.setOptions(comboBox.getItemAt(comboBox.getSelectedIndex()), engine.getSample_GridCount(myNumber),
                         engine.getSample_GridHorizontal(myNumber), engine.getSample_GridVertical(myNumber),
@@ -272,7 +282,8 @@ class TabPanel extends JPanel {
                 god.setModal(true);
                 god.pack();
                 god.setVisible(true);
-                if (god.getOK()) {
+                if (god.getOK())
+                {
                     comboboxIsChanging = true;
                     int cont = JOptionPane.YES_OPTION;
                     // TODO Deletion warning commented out for now
@@ -284,7 +295,8 @@ class TabPanel extends JPanel {
                     // numDelete + " Grids And All Data Related To Them"),
                     // "Warning! You May Be Deleting Important Data",
                     // JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-                    if (cont == JOptionPane.YES_OPTION) {
+                    if (cont == JOptionPane.YES_OPTION)
+                    {
                         main.modifyGridProfile(comboBox.getSelectedIndex()-1, god.getProfileName(), god.getGridNum(),
                                 god.getHorizontal(), god.getVertical(), god.getFirstSpot());
                     }
@@ -293,11 +305,13 @@ class TabPanel extends JPanel {
             }
         });
         btnModify.setBounds(240, 45, 75, 23);
-        gridding.add(btnModify);
+        panel_Grid.add(btnModify);
 
         JButton btnDelete = new JButton("Delete");
-        btnDelete.addActionListener(deleteBut -> {
-            if (comboBox.getSelectedIndex() != 0) {
+        btnDelete.addActionListener(deleteBut ->
+        {
+            if (comboBox.getSelectedIndex() != 0)
+            {
                 comboboxIsChanging = true;
                 int selection = JOptionPane.showOptionDialog(this,
                         "This will delete the selected profile for all samples.\n"
@@ -305,7 +319,8 @@ class TabPanel extends JPanel {
                                 + "This cannot be undone. Are you sure you want to delete?",
                         "Delete Grid Profile!", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null,
                         null);
-                if (selection == JOptionPane.OK_OPTION) {
+                if (selection == JOptionPane.OK_OPTION)
+                {
                     main.removeGridProfile(comboBox.getSelectedIndex()-1);
                 }
                 selectedProfileNum = 0;
@@ -313,16 +328,16 @@ class TabPanel extends JPanel {
             }
         });
         btnDelete.setBounds(324, 45, 70, 23);
-        gridding.add(btnDelete);
+        panel_Grid.add(btnDelete);
 
         gridScrollPanePanel = new JPanel();
         gridScrollPane = new JScrollPane(gridScrollPanePanel);
         gridScrollPane.setBounds(10, 70, 600, 100);
-        gridding.add(gridScrollPane);
+        panel_Grid.add(gridScrollPane);
+        */
 
         // Segmentation panel starts here
-
-        segment = new JPanel();
+        segment = new SegmentPanel(main, myNumber, engine);
         TitledBorder seg_title = BorderFactory.createTitledBorder(blackline, "Segmentation");
         seg_title.setTitleJustification(TitledBorder.LEFT);
         segment.setBorder(seg_title);
@@ -331,13 +346,14 @@ class TabPanel extends JPanel {
         gbc_segment.insets = new Insets(0, 5, 5, 0);
         gbc_segment.fill = GridBagConstraints.BOTH;
         gbc_segment.gridx = 1;
-        gbc_segment.gridy = 2;
+        gbc_segment.gridy = 3;
         gbc_segment.gridheight = 1;
         gbc_segment.gridwidth = 2;
         gbc_segment.weightx = 1.0;
         gbc_segment.weighty = 1.0;
         gbc_segment.insets = new Insets(0, 5, 5, 5); // top, left, bottom, right
         this.add(segment, gbc_segment);
+/*
 
         JLabel lblNewLabel_1 = new JLabel("Choose one of the following segmentation options:");
         lblNewLabel_1.setBounds(10, 20, 300, 14);
@@ -345,12 +361,11 @@ class TabPanel extends JPanel {
 
         ipGrn = engine.getSample_GreenImagePlus(myNumber);
         ipRed = engine.getSample_RedImagePlus(myNumber);
-        //Image green = ipGrn.getImage();
-        //Image red = ipRed.getImage();
 
         JRadioButton rdbtnNewRadioButton = new JRadioButton("Adaptive Circle");
         rdbtnNewRadioButton.setBounds(310, 16, 110, 23);
-        rdbtnNewRadioButton.addActionListener(adaptiveCircle -> {
+        rdbtnNewRadioButton.addActionListener(adaptiveCircle ->
+        {
             segmentationMode(segment);
             segmentMode = GeneImageAspect.ADAPTIVE_CIRCLE;
             engine.setSample_SegmentationMethod(myNumber, segmentMode);
@@ -360,7 +375,8 @@ class TabPanel extends JPanel {
 
         JRadioButton rdbtnNewRadioButton_1 = new JRadioButton("Seeded Region Growing");
         rdbtnNewRadioButton_1.setBounds(420, 16, 160, 23);
-        rdbtnNewRadioButton_1.addActionListener(seededRegionButton -> {
+        rdbtnNewRadioButton_1.addActionListener(seededRegionButton ->
+        {
             segmentationMode(segment);
             segmentMode = GeneImageAspect.SEEDED_REGION;
             engine.setSample_SegmentationMethod(myNumber, segmentMode);
@@ -370,7 +386,6 @@ class TabPanel extends JPanel {
         segment.add(rdbtnNewRadioButton_1);
 
         // Button group so only one radio button can be active at one time.
-
         group1 = new ButtonGroup();
         group1.add(rdbtnNewRadioButton);
         group1.add(rdbtnNewRadioButton_1);
@@ -392,8 +407,10 @@ class TabPanel extends JPanel {
         spnGrid.setBounds(480, 110, 40, 20);
         segment.add(spnGrid);
 
-        spnGrid.addChangeListener(changePosition -> {
-            if (sdGreenSlide != null && !segmentationIsChanging) {
+        spnGrid.addChangeListener(changePosition ->
+        {
+            if (sdGreenSlide != null && !segmentationIsChanging)
+            {
                 moveTo((Integer) spnGrid.getValue(), (Integer) spnSpot.getValue());
                 updateGeneInfo(segmentMode);
             }
@@ -413,8 +430,10 @@ class TabPanel extends JPanel {
         spnSpot.setBounds(480, 150, 40, 20);
         segment.add(spnSpot);
 
-        spnSpot.addChangeListener(changePosition -> {
-            if (sdGreenSlide != null && !segmentationIsChanging) {
+        spnSpot.addChangeListener(changePosition ->
+        {
+            if (sdGreenSlide != null && !segmentationIsChanging)
+            {
                 moveTo((Integer) spnGrid.getValue(), (Integer) spnSpot.getValue());
                 updateGeneInfo(segmentMode);
             }
@@ -430,8 +449,10 @@ class TabPanel extends JPanel {
         slidderSeededThreshold.setPaintLabels(true);
         slidderSeededThreshold.setBounds(500, 50, 150, 40);
         segment.add(slidderSeededThreshold);
-        slidderSeededThreshold.addChangeListener(seededThresholdChange -> {
-            if (sdGreenSlide != null) {
+        slidderSeededThreshold.addChangeListener(seededThresholdChange ->
+        {
+            if (sdGreenSlide != null)
+            {
                 updateGeneInfo(segmentMode);
                 engine.setSample_MethodThreshold(myNumber, slidderSeededThreshold.getValue());
                 sdGreenSlide.repaint();
@@ -446,11 +467,9 @@ class TabPanel extends JPanel {
         JLabel lblRed = new JLabel("Red");
         lblRed.setBounds(300, 250, 40, 14);
         segment.add(lblRed);
-
-        // handler code
-
+        */
+        /*
         // Expression panel starts here
-
         JPanel expression = new JPanel();
         TitledBorder exp_title = BorderFactory.createTitledBorder(blackline, "Gene Expression Ratios");
         exp_title.setTitleJustification(TitledBorder.LEFT);
@@ -492,14 +511,18 @@ class TabPanel extends JPanel {
         lblNewLabel_3.setBounds(10, 60, 350, 14);
         expression.add(lblNewLabel_3);
 
-        String[] signal = { "Total Signal", "Average Signal", "Total Signal BG Subtraction", "Average Signal BG Subtraction" };
+        String[] signal = { "Total Signal", "Average Signal", "Total Signal BG Subtraction",
+                "Average Signal BG Subtraction" };
         JComboBox<String> comboBox_1 = new JComboBox<String>(signal);
         comboBox_1.setBounds(360, 58, 200, 20);
         expression.add(comboBox_1);
 
-        comboBox_1.addActionListener(combo_1 -> {
-            if (sdGreenSlide != null){
-                switch (comboBox_1.getSelectedIndex()) {
+        comboBox_1.addActionListener(combo_1 ->
+        {
+            if (sdGreenSlide != null)
+            {
+                switch (comboBox_1.getSelectedIndex())
+                {
                     case 0:
                         ratioMethod = GeneImageAspect.TOTAL_SIGNAL;
                         break;
@@ -546,9 +569,11 @@ class TabPanel extends JPanel {
         JLabel lblCombined = new JLabel("Combined");
         lblCombined.setBounds(450, 250, 100, 14);
         expression.add(lblCombined);
+        */
     }
 
-    private Image buildImage() {
+    private Image buildImage()
+    {
         Image green = engine.getSample_GreenImage(myNumber);
         Image red = engine.getSample_RedImage(myNumber);
 
@@ -563,14 +588,17 @@ class TabPanel extends JPanel {
 
         PixelGrabber pg = new PixelGrabber(green, 0, 0, w, h, pixels, 0, w);
         PixelGrabber redpg = new PixelGrabber(red, 0, 0, w, h, redpixels, 0, w);
-        try {
+        try
+        {
             pg.grabPixels();
             redpg.grabPixels();
-        } catch (Exception e) {
+        } catch (Exception e)
+        {
             System.out.print("(Error Grabbing Pixels) " + e);
         }
 
-        for (int i = 0; i < pixels.length; i++) {
+        for (int i = 0; i < pixels.length; i++)
+        {
             int p = pixels[i];
             int redp = redpixels[i];
             int a = (p >> 24) & 0xFF;
@@ -583,6 +611,14 @@ class TabPanel extends JPanel {
         return createImage(new MemoryImageSource(w, h, pixels, 0, w));
     }
 
+    public void addGrid(int num, int tlX, int tlY, int trX, int trY, int blX, int blY, int brX, int brY, int row, int col)
+    {
+        gridCount++;
+        engine.setSample_GridCount(myNumber, gridCount);
+        drawGrid(num, tlX, tlY, trX, trY, blX, blY, brX, brY, row, col);
+        refreshSegmentation();
+    }
+
     protected void drawGrid(int num, int tlX, int tlY, int trX, int trY, int blX, int blY, int brX, int brY, int row, int col)
     {
         engine.setSample_Grid_AllFeatures(myNumber, num, tlX, tlY, trX, trY, blX, blY, brX, brY, row, col);
@@ -590,23 +626,20 @@ class TabPanel extends JPanel {
         imageDisplayPanel.repaint();
     }
 
-    private void coordinateFound(int x, int y) {
-        for (GridPanel gp : gridPanelsList) {
-            if (gp.isAwaitingData()) {
-                gp.addCoordinates(x, y);
-            }
-        }
+    private void coordinateFound(int x, int y)
+    {
+        panel_Grid.coordinatesFound(x, y);
     }
 
     /**
      * gets the actual x-coordinate on the image based on the screen
      * x-coordinate
      *
-     * @param ex
-     *            screen x-coordinate
+     * @param ex screen x-coordinate
      * @return actual x-coordinate on the image based on the screen x-coordinate
      */
-    public int xCoordinate(int ex) {
+    public int xCoordinate(int ex)
+    {
         return ((imageDisplayPanel.getCanvas().getSrcRect().x
                 + Math.round((float) ((ex) / imageDisplayPanel.getZoom()))));
     }
@@ -615,60 +648,70 @@ class TabPanel extends JPanel {
      * gets the actual y-coordinate on the image based on the screen
      * y-coordinate
      *
-     * @param ey
-     *            screen y-coordinate
+     * @param ey    screen y-coordinate
      * @return actual y-coordinate on the image based on the screen y-coordinate
      */
-    public int yCoordinate(int ey) {
+    public int yCoordinate(int ey)
+    {
         return ((imageDisplayPanel.getCanvas().getSrcRect().y
                 + Math.round((float) ((ey) / imageDisplayPanel.getZoom()))));
     }
 
-    public void addToComboBox(String s, boolean focused) {
+    public void addToComboBox(String s, boolean focused)
+    {
         comboBox.addItem(s);
-        if (focused) {
+        if (focused)
+        {
             comboBox.setSelectedIndex(comboBox.getItemCount() - 1);
         }
     }
 
-    public void changeInComboBox(String s, int i) {
+    public void changeInComboBox(String s, int i)
+    {
         boolean refocus = false;
-        if (comboBox.getSelectedIndex() == i) {
+        if (comboBox.getSelectedIndex() == i)
+        {
             refocus = true;
         }
         comboBox.removeItemAt(i);
         comboBox.insertItemAt(s, i);
-        if (refocus) {
+        if (refocus)
+        {
             comboBox.setSelectedIndex(i);
             engine.setSample_GridCount(myNumber, engine.getGridProfile_Number(i));
             engine.setSample_GridHorizontal(myNumber, engine.getGridProfile_Horizontal(i));
             engine.setSample_GridVertical(myNumber, engine.getGridProfile_Vertical(i));
             engine.setSample_GridDirection(myNumber, engine.getGridProfile_Direction(i));
-            updateGridCount();
+            //updateGridCount();
         }
     }
 
-    public void removeFromComboBox(int i) {
-        if (i == comboBox.getSelectedIndex()) {
+    public void removeFromComboBox(int i)
+    {
+        if (i == comboBox.getSelectedIndex())
+        {
             comboBox.setSelectedIndex(0);
             engine.setSample_GridCount(myNumber, 0);
-            updateGridCount();
+            //updateGridCount();
         }
         comboBox.removeItemAt(i);
     }
 
-    private void updateGridCount() {
-        while (engine.getSample_GridCount(myNumber) < gridPanelsList.size()) {
+    private void updateGridCount()
+    {
+        while (engine.getSample_GridCount(myNumber) < gridPanelsList.size())
+        {
             gridScrollPanePanel.remove(gridPanelsList.get(gridPanelsList.size() - 1));
             gridPanelsList.remove(gridPanelsList.size() - 1);
             gridCount--;
         }
 
-        while (engine.getSample_GridCount(myNumber) > gridPanelsList.size()) {
+        while (engine.getSample_GridCount(myNumber) > gridPanelsList.size())
+        {
             gridCount++;
-            GridPanel gp = new GridPanel(this, gridCount);
-            gridPanelsList.add(gp);
-            gridScrollPanePanel.add(gp);
+            //GridPanelPanel gp = new GridPanelPanel(this, gridCount);
+            //gridPanelsList.add(gp);
+            //gridScrollPanePanel.add(gp);
         }
 
         gridScrollPanePanel.revalidate();
@@ -686,6 +729,8 @@ class TabPanel extends JPanel {
 
     protected void refreshSegmentation()
     {
+        segment.updateSegmentation();
+        /*
         if (gridCount < 1 && sdGreenSlide != null)
         {
             segment.remove(scrollGreen);
@@ -706,32 +751,19 @@ class TabPanel extends JPanel {
             sdGreenSlide.repaint();
             sdRedSlide.repaint();
         }
+        */
     }
 
-    private void segmentationMode(JPanel target) {
-
-        if (sdGreenSlide == null && engine.getSample_GridCount(myNumber) > 0 && engine.getSample_Grid_Columns(myNumber, 0) > 0) {
-            int[][] grnPixels = new int[ipGrn.getHeight()][ipGrn.getWidth()];
-            int[][] redPixels = new int[ipRed.getHeight()][ipRed.getWidth()];
-            for(int i=0; i<(int)ipGrn.getHeight(); i++){
-                for (int j=0; j<(int)ipGrn.getWidth(); j++){
-                    grnPixels[i][j]=ipGrn.getProcessor().getPixel(j,i);
-                }
-            }
-            for(int i = 0; i < (int)ipRed.getHeight(); i++) {
-                for(int j = 0; j < (int)ipRed.getWidth(); j++) {
-                    redPixels[i][j] = ipRed.getProcessor().getPixel(j,i);
-                }
-            }
-
-
-            sdGreenSlide = new SegmentDisplay(myNumber, ipGrn, engine);
+    private void segmentationMode(JPanel target)
+    {
+        if (sdGreenSlide == null && engine.getSample_GridCount(myNumber) > 0
+                && engine.getSample_Grid_Columns(myNumber, 0) > 0)
+        {
+            sdGreenSlide = new SegmentDisplay(myNumber, true, engine);
             sdGreenSlide.setBounds(-10, -50, 200, 200);
-            sdGreenSlide.RawPixels = grnPixels;
 
-            sdRedSlide = new SegmentDisplay(myNumber, ipRed, engine);
+            sdRedSlide = new SegmentDisplay(myNumber, false, engine);
             sdRedSlide.setBounds(-20, -100, 200, 200);
-            sdRedSlide.RawPixels = redPixels;
 
             scrollGreen = new JScrollPane(sdGreenSlide);
             scrollGreen.setBounds(10, 45, 200, 200);
@@ -749,27 +781,25 @@ class TabPanel extends JPanel {
             sdRedSlide.zoom(10);
             sdGreenSlide.zoom(10);
 
-            //manager.getCurrentGrid().setCurrentSpot(1);
-            // zoomToCell();
             showCurrentCell();
             refreshSegmentation();
         }
     }
 
-    public void moveTo(int grid, int spot) {
+    public void moveTo(int grid, int spot)
+    {
         setSpot(grid - 1, spot - 1); // zero based
         showCurrentCell();
     }
 
-    /*
+    /**
      * sets the current spot to the specified grid and (transformed) spot number
-     *
      * @param grid grid number
-     *
      * @param spot transformed spot number
      */
     public void setSpot(int grid, int spot) {
-        if (grid >= 0 && grid < engine.getSample_GridCount(myNumber) && spot >= 0 && spot < engine.getSample_Grid_NumberOfSpots(myNumber, grid))
+        if (grid >= 0 && grid < engine.getSample_GridCount(myNumber) && spot >= 0
+                && spot < engine.getSample_Grid_NumberOfSpots(myNumber, grid))
         {
             gridNum = grid;
             spotNum = spot;
@@ -783,7 +813,8 @@ class TabPanel extends JPanel {
      * sets the segement displays to show the current spot cells for both the
      * red and green image
      */
-    public void showCurrentCell() {
+    public void showCurrentCell()
+    {
         setCurrentCell();
         newTopLeftX = ((int) (sdGreenSlide.getZoom() * cell.xpoints[0])) - 4;
         newTopLeftY = ((int) (sdGreenSlide.getZoom() * cell.ypoints[0])) - 4;
@@ -797,7 +828,8 @@ class TabPanel extends JPanel {
     /**
      * sets the magnification in both segment displays to the spot level
      */
-    public void zoomToCell() {
+    public void zoomToCell()
+    {
         sdGreenSlide
                 .zoom(((jSplitPaneVert.getHeight() - jSplitPaneVert.getDividerSize() - (2 * redPanel.getHeight())) / 2)
                         / cellHeight);
@@ -810,11 +842,14 @@ class TabPanel extends JPanel {
     /**
      * sets the current cell coordinates
      */
-    public void setCurrentCell() {
+    public void setCurrentCell()
+    {
         Polygon p = engine.getSample_Grid_TranslatedPolygon(myNumber, engine.getSample_CurrentGridNum(myNumber));
         Polygon q = new Polygon();
-        if (p != null) {
-            for (int j = 0; j < p.xpoints.length; j++) {
+        if (p != null)
+        {
+            for (int j = 0; j < p.xpoints.length; j++)
+            {
                 q.xpoints[j] = (int) ((sdGreenSlide.screenX(p.xpoints[j])) / sdGreenSlide.getZoom());
                 q.ypoints[j] = (int) ((sdGreenSlide.screenX(p.ypoints[j])) / sdGreenSlide.getZoom());
             }
@@ -825,18 +860,8 @@ class TabPanel extends JPanel {
     }
 
     protected void updateGeneInfo(int i){
-/*        boolean flagStatus = flagman.checkFlag(gridNum, spotNum);
-        int[] autoThresh;
-        if (afod.getOK()) autoThresh = afod.getThresholds();
-        else{
-            autoThresh = new int[4];
-            autoThresh[0] = -1;
-            autoThresh[1] = Integer.MAX_VALUE;
-            autoThresh[2] = -1;
-            autoThresh[3] = Integer.MAX_VALUE;
-        }
-*/
-        if(i == GeneImageAspect.SEEDED_REGION){//methodCombo.getSelectedItem().toString().equals("Seeded Region Growing")){
+        if(i == GeneImageAspect.SEEDED_REGION)
+        {
             Object[] params = new Object[1];
             params[0] = slidderSeededThreshold.getValue();
             engine.setSample_Gene_Data(myNumber, sdRedSlide.getCellPixels(),sdGreenSlide.getCellPixels(),
@@ -844,28 +869,11 @@ class TabPanel extends JPanel {
             sdRedSlide.setSeededRegion(engine.getSample_Gene_CenterSpots(myNumber, true));
             sdGreenSlide.setSeededRegion(engine.getSample_Gene_CenterSpots(myNumber, false));
         }
-        else if(i == GeneImageAspect.ADAPTIVE_CIRCLE){
-            int minr, maxr;
-            try{
-                minr = 2;
-                maxr = 8;
-                /*if(minr<1||maxr<1||minr>maxr){
-                    JOptionPane.showMessageDialog(segframe.getDesktopPane(), "Radii Must Be Positive Integer Values.\nThe Maximum Radius Must Also Be Greater Than Or Equal To The Minimum Radius.\nThe Radii Have Been Reset To The Default Values Of 3 and 8.", "Incorrect Entry!", JOptionPane.ERROR_MESSAGE);
-                    minr=3;
-                    maxr=8;
-                    minradiusField.setText(""+3);
-                    maxradiusField.setText(""+8);
-                }*/
-            }catch(Exception e){
-                minr=3;
-                maxr=8;
-                //minradiusField.setText(""+3);
-                //maxradiusField.setText(""+8);
-                //JOptionPane.showMessageDialog(segframe.getDesktopPane(), "Radii Must Be Positive Integer Values.\nThe Radii Have Been Reset To The Default Values Of 3 and 8.", "Incorrect Entry!", JOptionPane.ERROR_MESSAGE);
-            }
+        else if(i == GeneImageAspect.ADAPTIVE_CIRCLE)
+        {
             Object[] params = new Object[3];
-            params[0] = new Integer(minr);
-            params[1] = new Integer(maxr);
+            params[0] = 3;
+            params[1] = 8;
             params[2] = slidderSeededThreshold.getValue();
             engine.setSample_Gene_Data(myNumber, sdRedSlide.getCellPixels(),sdGreenSlide.getCellPixels(),
                     sdRedSlide.getCellHeight(), sdRedSlide.getCellWidth(), 2, params);
@@ -873,20 +881,18 @@ class TabPanel extends JPanel {
             sdGreenSlide.setAdaptiveCircle(engine.getSample_Gene_CenterAndRadius(myNumber));
         }
 
-        if(i == 1 || i == 2)
+        if(i == GeneImageAspect.SEEDED_REGION || i == GeneImageAspect.ADAPTIVE_CIRCLE)
         {
             String flagText = "N/A";
-//            if(flagStatus) flagText = "<html>Flagging Status: <font color=\"#0000FF\">MANUALLY FLAGGED</font></html>";
-//            else if ((gd.getRedForegroundTotal() < autoThresh[0]) || (gd.getRedBackgroundTotal() > autoThresh[1]) || (gd.getGreenForegroundTotal() < autoThresh[2]) || (gd.getGreenBackgroundTotal() > autoThresh[3])) flagText = "<html>Flagging Status: <font color=\"FF9900\">AUTOMATICALLY FLAGGED</font></html>";
-//            else flagText = "Flagging Status: Not Flagged";
-
-            if(ratioMethod==GeneImageAspect.TOTAL_SIGNAL||ratioMethod==GeneImageAspect.TOTAL_SUBTRACT_BG) {
+            if(ratioMethod==GeneImageAspect.TOTAL_SIGNAL||ratioMethod==GeneImageAspect.TOTAL_SUBTRACT_BG)
+            {
                 textArea_3.setText("Green BG Total: " + df.format(engine.getSample_Gene_GreenBackgroundTotal(myNumber)) +
                         "\nGreen FG Total: " +  df.format(engine.getSample_Gene_GreenForegroundTotal(myNumber)) +
                         "\nRed BG Total: " + df.format(engine.getSample_Gene_RedBackgroundTotal(myNumber)) +
                         "\nRed FG Total: " + df.format(engine.getSample_Gene_RedForegroundTotal(myNumber)));
             }
-             else{
+            else
+            {
                 textArea_3.setText("Green BG Avg: " + df.format(engine.getSample_Gene_GreenBackgroundAvg(myNumber)) +
                         "\nGreen FG Avg: " + df.format(engine.getSample_Gene_GreenForegroundAvg(myNumber)) +
                         "\nRed BG Avg: " + df.format(engine.getSample_Gene_RedBackgroundAvg(myNumber)) +
@@ -894,48 +900,10 @@ class TabPanel extends JPanel {
             }
             textArea_3.setText(textArea_3.getText() + "\nRatio: " + df.format(engine.getSample_Gene_Ratio(myNumber, ratioMethod)));
             textArea_3.setText(textArea_3.getText() + "\nFlagging Status: " + flagText);
-
-
-        } else{
-            textArea_4.setText("Ratio: N/A \nGreen Background: N/A \nGreen Foreground: N/A \nRed Background: N/A \nRed Foreground: N/A");
-        }
-
-    }
-
-    public Object[] getCellData(int grid, int spot)
-    {
-        engine.setSample_CurrentGrid(myNumber, grid);
-        engine.setSample_CurrentSpot(myNumber, engine.getSample_Grid_ActualSpotNum(myNumber, grid, spot));
-
-        Object[] params = new Object[6];
-        params[0] = sdRedSlide.getCellPixels();
-        params[1] = sdGreenSlide.getCellPixels();
-        params[2] = sdRedSlide.getCellHeight();
-        params[3] = sdRedSlide.getCellWidth();
-        params[4] = segmentMode;
-
-        if (segmentMode == GeneImageAspect.SEEDED_REGION)
-        {
-            Object[] params2 = new Object[1];
-            params[0] = slidderSeededThreshold.getValue();
-            params[5] = params2;
-        }
-        else if (segmentMode == GeneImageAspect.ADAPTIVE_CIRCLE)
-        {
-            Object[] params2 = new Object[3];
-            params[0] = new Integer(2);
-            params[1] = new Integer(8);
-            params[2] = slidderSeededThreshold.getValue();
-            params[5] = params2;
         }
         else
         {
-            params[5] = null;
+            textArea_4.setText("Ratio: N/A \nGreen Background: N/A \nGreen Foreground: N/A \nRed Background: N/A \nRed Foreground: N/A");
         }
-
-        engine.setSample_CurrentGrid(myNumber, gridNum);
-        engine.setSample_CurrentSpot(myNumber, engine.getSample_Grid_ActualSpotNum(myNumber, gridNum, spotNum));
-
-        return params;
     }
 }

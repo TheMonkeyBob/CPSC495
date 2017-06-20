@@ -71,16 +71,32 @@ public class SegmentDisplay extends JPanel {
 
     /**
      * Constructs the display for the given image and grid manager
-     * @param imp microarray image to be displayed for segmentation
+     * @param isGreen Whether the image is green or red
      */
-    public SegmentDisplay(int number, ImagePlus imp, Engine engine) {
+    public SegmentDisplay(int number, boolean isGreen, Engine engine) {
         this.engine = engine;
         myNumber = number;
 
         engine.setSample_CurrentGrid(myNumber, 0);
         engine.setSample_CurrentSpot(myNumber, 0);
-        ip = imp;
-        //ip = new ImagePlus("Overlayed",im);
+        if (isGreen)
+        {
+            ip = engine.getSample_GreenImagePlus(myNumber);
+        }
+        else
+        {
+            ip = engine.getSample_RedImagePlus(myNumber);
+        }
+
+        RawPixels = new int[ip.getHeight()][ip.getWidth()];
+        for(int i=0; i<ip.getHeight(); i++)
+        {
+            for (int j=0; j<ip.getWidth(); j++)
+            {
+                RawPixels[i][j]=ip.getProcessor().getPixel(j,i);
+            }
+        }
+
         ic = new ImageCanvas(ip){
             public void paintComponent(Graphics g){
                 super.paintComponent(g);

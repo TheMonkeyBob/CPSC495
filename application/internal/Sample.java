@@ -554,21 +554,9 @@ public class Sample
      * @param aspect Method to use to get ratio.
      * @return The ratio for the gene data.
      */
-    public int getGene_Ratio(int aspect)
+    public double getGene_Ratio(int aspect)
     {
-        switch (aspect)
-        {
-            case GeneImageAspect.AVG_SIGNAL:
-                return current_gene.AVG_SIGNAL;
-            case GeneImageAspect.AVG_SUBTRACT_BG:
-                return current_gene.AVG_SUBTRACT_BG;
-            case GeneImageAspect.TOTAL_SIGNAL:
-                return current_gene.TOTAL_SIGNAL;
-            case GeneImageAspect.TOTAL_SUBTRACT_BG:
-                return current_gene.TOTAL_SUBTRACT_BG;
-            default:
-                return 0;
-        }
+        return gene_data.getRatio(aspect);
     }
 
     /**
