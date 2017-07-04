@@ -1,10 +1,13 @@
 package application.gui;
 
 import javax.swing.*;
+import javax.swing.border.Border;
 import javax.swing.text.NumberFormatter;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
 class GridPanelPanel extends JPanel {
 
@@ -20,6 +23,8 @@ class GridPanelPanel extends JPanel {
     private JLabel label_Columns;
     private JTextField textField_Rows;
     private JTextField textField_Columns;
+    private Border border_Blackline = BorderFactory.createLineBorder(Color.black);
+    private Border border_Yellowline = BorderFactory.createLineBorder(Color.yellow);
 
     private int myNumber;
     private int mode = 0;
@@ -50,6 +55,37 @@ class GridPanelPanel extends JPanel {
         this.setSize(80, 40);
         this.setPreferredSize(new Dimension(80, 40));
         this.setLayout(null);
+
+        MouseAdapter ma = new MouseAdapter()
+        {
+            @Override
+            public void mouseClicked(MouseEvent e)
+            {}
+
+            @Override
+            public void mousePressed(MouseEvent e)
+            {
+                parent_panel.setSelectedGrid(myNumber-1);
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e)
+            {}
+
+            @Override
+            public void mouseEntered(MouseEvent e)
+            {}
+
+            @Override
+            public void mouseExited(MouseEvent e)
+            {}
+
+            @Override
+            public void mouseDragged(MouseEvent e)
+            {}
+        };
+
+        this.addMouseListener(ma);
 
         button_Cancel = new JButton();
         button_Cancel.setBounds(0, 0, 10, 10);
@@ -186,67 +222,73 @@ class GridPanelPanel extends JPanel {
     {
         mode++;
 
-        switch (mode) {
-        case 1:
-            label_ClickTopLeft.setVisible(true);
-            awaitingData = true;
-            break;
-        case 2:
-            label_ClickTopLeft.setVisible(false);
-            label_ClickTopRight.setVisible(true);
-            break;
-        case 3:
-            label_ClickTopRight.setVisible(false);
-            label_ClickBottom.setVisible(true);
-            break;
-        case 4:
-            label_ClickBottom.setVisible(false);
-            label_Rows.setVisible(true);
-            textField_Rows.setVisible(true);
-            textField_Rows.requestFocus();
-            break;
-        case 5:
-            label_Rows.setVisible(false);
-            textField_Rows.setVisible(false);
-            label_Columns.setVisible(true);
-            textField_Columns.setVisible(true);
-            textField_Columns.requestFocus();
-            break;
-        case 6:
-            label_Columns.setVisible(false);
-            textField_Columns.setVisible(false);
-            label_Name.setVisible(true);
-            label_Grid.setText(rows_temp + "x" + columns_temp);
-            label_Grid.setBounds(this.getWidth()/2 - (int)label_Grid.getPreferredSize().getWidth()/2, label_Name.getY()
-                    + label_Name.getHeight(), (int)label_Grid.getPreferredSize().getWidth(),
-                    (int)label_Grid.getPreferredSize().getHeight());
-            label_Grid.setVisible(true);
+        switch (mode)
+        {
+            case 1:
+                label_ClickTopLeft.setVisible(true);
+                awaitingData = true;
+                break;
+            case 2:
+                label_ClickTopLeft.setVisible(false);
+                label_ClickTopRight.setVisible(true);
+                break;
+            case 3:
+                label_ClickTopRight.setVisible(false);
+                label_ClickBottom.setVisible(true);
+                break;
+            case 4:
+                label_ClickBottom.setVisible(false);
+                label_Rows.setVisible(true);
+                textField_Rows.setVisible(true);
+                textField_Rows.requestFocus();
+                break;
+            case 5:
+                label_Rows.setVisible(false);
+                textField_Rows.setVisible(false);
+                label_Columns.setVisible(true);
+                textField_Columns.setVisible(true);
+                textField_Columns.requestFocus();
+                break;
+            case 6:
+                label_Columns.setVisible(false);
+                textField_Columns.setVisible(false);
+                label_Name.setVisible(true);
+                label_Grid.setText(rows_temp + "x" + columns_temp);
+                label_Grid.setBounds(this.getWidth()/2 - (int)label_Grid.getPreferredSize().getWidth()/2, label_Name.getY()
+                                + label_Name.getHeight(), (int)label_Grid.getPreferredSize().getWidth(),
+                        (int)label_Grid.getPreferredSize().getHeight());
+                label_Grid.setVisible(true);
 
-            remove(label_ClickTopLeft);
-            label_ClickTopLeft = null;
-            remove(label_ClickTopRight);
-            label_ClickTopRight = null;
-            remove(label_ClickBottom);
-            label_ClickBottom = null;
-            remove(label_Rows);
-            label_Rows = null;
-            remove(label_Columns);
-            label_Columns = null;
-            remove(textField_Columns);
-            textField_Columns = null;
-            remove(textField_Rows);
-            textField_Rows = null;
-            remove(button_Cancel);
-            button_Cancel = null;
+                remove(label_ClickTopLeft);
+                label_ClickTopLeft = null;
+                remove(label_ClickTopRight);
+                label_ClickTopRight = null;
+                remove(label_ClickBottom);
+                label_ClickBottom = null;
+                remove(label_Rows);
+                label_Rows = null;
+                remove(label_Columns);
+                label_Columns = null;
+                remove(textField_Columns);
+                textField_Columns = null;
+                remove(textField_Rows);
+                textField_Rows = null;
+                remove(button_Cancel);
+                button_Cancel = null;
 
-            parent_panel.finalizeGridPanelPanel();
-            awaitingData = false;
-            commitValues();
-            break;
-        default:
-            mode = 0;
-            progressMode();
-            break;
+                parent_panel.finalizeGridPanelPanel();
+                awaitingData = false;
+                commitValues();
+                parent_panel.setSelectedGrid(myNumber-1);
+                break;
+            case 7:
+            case 8:
+                mode = 7;
+                break;
+            default:
+                mode = 0;
+                progressMode();
+                break;
         }
         updateUI();
         parent_panel.updateUI();
@@ -305,5 +347,17 @@ class GridPanelPanel extends JPanel {
         int columns = columns_temp;
 
         parent_panel.addGrid(topLeftX, topLeftY, topRightX, topRightY, bottomX_temp, bottomY_temp, rows, columns);
+    }
+
+    public void setSelected(boolean selected)
+    {
+        if (selected)
+        {
+            this.setBorder(border_Yellowline);
+        }
+        else
+        {
+            this.setBorder(border_Blackline);
+        }
     }
 }

@@ -209,7 +209,7 @@ public class SegmentPanel extends JPanel
         label_Control = new JLabel("Conrol:");
         label_Control.setBounds(0, radioButton_Fixed.getY() + radioButton_Fixed.getHeight() + 10,
                 (int)label_Control.getPreferredSize().getWidth(), (int)label_Control.getPreferredSize().getHeight());
-        panel_Settings.add(label_Control);
+        //panel_Settings.add(label_Control);
         buttonGroup_Control = new ButtonGroup();
         radioButton_ControlGreen = new JRadioButton("Green");
         radioButton_ControlGreen.setBounds(label_Control.getX() + label_Control.getWidth() + 10, label_Control.getY()
@@ -217,13 +217,13 @@ public class SegmentPanel extends JPanel
                 (int)radioButton_ControlGreen.getPreferredSize().getHeight());
         radioButton_ControlGreen.setSelected(true);
         buttonGroup_Control.add(radioButton_ControlGreen);
-        panel_Settings.add(radioButton_ControlGreen);
+        //panel_Settings.add(radioButton_ControlGreen);
         radioButton_ControlRed = new JRadioButton("Red");
         radioButton_ControlRed.setBounds(radioButton_ControlGreen.getX() + radioButton_ControlGreen.getWidth() + 10,
                 radioButton_ControlGreen.getY(), (int)radioButton_ControlRed.getPreferredSize().getWidth(),
                 (int)radioButton_ControlRed.getPreferredSize().getHeight());
         buttonGroup_Control.add(radioButton_ControlRed);
-        panel_Settings.add(radioButton_ControlRed);
+        //panel_Settings.add(radioButton_ControlRed);
 
         button_ThreshMinus = new JButton();
         button_ThreshMinus.setBounds(2, label_Control.getY() + label_Control.getHeight() + 10, 20, 20);
@@ -463,14 +463,14 @@ public class SegmentPanel extends JPanel
         checkBox_AntiFlag.setBounds(label_Flag.getX() + label_Flag.getWidth() + 15, checkBox_Flag.getY(),
                 (int)checkBox_AntiFlag.getPreferredSize().getWidth(),
                 (int)checkBox_AntiFlag.getPreferredSize().getHeight());
-        panel_Settings.add(checkBox_AntiFlag);
+        //panel_Settings.add(checkBox_AntiFlag);
         label_AntiFlag = new JLabel();
         label_AntiFlag.setIcon(ImgManager.AntiFlag_On);
         label_AntiFlag.setDisabledIcon(ImgManager.AntiFlag_Off);
         label_AntiFlag.setEnabled(false);
         label_AntiFlag.setBounds(checkBox_AntiFlag.getX() + checkBox_AntiFlag.getWidth(), checkBox_AntiFlag.getY(),
                 20, 20);
-        panel_Settings.add(label_AntiFlag);
+        //panel_Settings.add(label_AntiFlag);
         checkBox_AntiFlag.addChangeListener(AntiFlagCheckBoxChange ->
         {
             if (checkBox_AntiFlag.isSelected())

@@ -438,4 +438,10 @@ class TabPanel extends JPanel {
     {
         imageDisplay.zoomToCurrentGrid();
     }
+
+    public void setSelectedGrid(int grid)
+    {
+        engine.setSample_CurrentGrid(myNumber, grid);
+        imageDisplay.setCurrentGrid(grid);
+    }
 }

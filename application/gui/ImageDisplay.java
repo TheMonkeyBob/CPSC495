@@ -662,4 +662,11 @@ public class ImageDisplay extends JScrollPane
         this.getVerticalScrollBar().setValue(y - 10);
         this.getHorizontalScrollBar().setValue(x - 10);
     }
+
+    public void setCurrentGrid(int grid)
+    {
+        current_gird_num = grid;
+        imageDisplayPanel.setCurrentGridNumber(grid);
+        repaint();
+    }
 }

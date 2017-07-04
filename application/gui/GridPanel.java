@@ -409,4 +409,20 @@ public class GridPanel extends JPanel
     {
         parent_panel.zoomToGrid();
     }
+
+    public void setSelectedGrid(int grid)
+    {
+        parent_panel.setSelectedGrid(grid);
+        for (int i = 0; i < grid_list.size(); i++)
+        {
+            if (i == grid)
+            {
+                grid_list.get(i).setSelected(true);
+            }
+            else
+            {
+                grid_list.get(i).setSelected(false);
+            }
+        }
+    }
 }
