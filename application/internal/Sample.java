@@ -20,6 +20,8 @@ public class Sample
     private GeneList gene_list;
     private ImagePlus green_IP = null;
     private ImagePlus red_IP = null;
+    private Image green_I = null;
+    private Image red_I = null;
 
     private int segment_method = 101;
     private int ratio_method = 1;
@@ -136,12 +138,20 @@ public class Sample
 
     public Image getGreenImage()
     {
-        return green_IP.getImage();
+        if (green_I == null)
+        {
+            green_I = green_IP.getImage();
+        }
+        return green_I;
     }
 
     public Image getRedImage()
     {
-        return red_IP.getImage();
+        if (red_I == null)
+        {
+            red_I = red_IP.getImage();
+        }
+        return red_I;
     }
 
     public ImagePlus getGreenImagePlus()
@@ -228,14 +238,45 @@ public class Sample
         return grid_manager.getNumGrids();
     }
 
+    public void addGrid(int leftX, int rightX, int topY, int bottomY, double angle, int rows, int columns)
+    {
+        grid_manager.setGridNum(getGridCount() + 1);
+        grid_manager.setGrid(getGridCount() - 1, new Grid(leftX, rightX, topY, bottomY, angle, rows, columns));
+    }
+
+    public void addGrid(int tlX, int tlY, int trX, int trY, int bX, int bY, int rows, int columns)
+    {
+        grid_manager.setGridNum(getGridCount() + 1);
+        grid_manager.setGrid(getGridCount() - 1, new Grid(tlX, tlY, trX, trY, bX, bY, rows, columns));
+    }
+
+    public void removeGrid(int grid)
+    {
+        int i = grid;
+        while (i < getGridCount() - 1)
+        {
+            grid_manager.setGrid(i, grid_manager.getGrid(i + 1));
+            i++;
+        }
+        if (grid < getGridCount())
+        {
+            grid_manager.setGridNum(getGridCount() - 1);
+        }
+    }
+
+    public Polygon getGrid_Polygon_Master(int grid)
+    {
+        return grid_manager.getGrid(grid).getPolygon_Master();
+    }
+
     /**
      * Gets the polygon for the specified grid.
      * @param grid The index of the grid. Base index 0.
      * @return The polygon of the sample's grid.
      */
-    public Polygon getGrid_Polygon(int grid)
+    public Polygon getGrid_Polygon_Base(int grid)
     {
-        return grid_manager.getGrid(grid).getPolygon();
+        return grid_manager.getGrid(grid).getPolygon_Base();
     }
 
     /**
@@ -243,76 +284,66 @@ public class Sample
      * @param grid The index of the grid. Base index 0.
      * @return The translated polygon of the sample's grid.
      */
-    public Polygon getGrid_TranslatedPolygon(int grid)
+    public Polygon getGrid_Polygon_Outline(int grid)
     {
-        return grid_manager.getGrid(grid).getTranslatedPolygon();
+        return grid_manager.getGrid(grid).getPolygon_Outline();
     }
 
     /**
      * Gets an array of polygons containing the vertical lines separating columns based on the given
      * polygon for a specific grid.
      * @param grid The index of the grid. Base index 0.
-     * @param poly Polygon to create vertical lines from.
      * @return Array of polygons containing the vertical lines.
      */
-    public Polygon[] getGrid_VertLines(int grid, Polygon poly)
+    public Polygon[] getGrid_Polygon_VerticalLines(int grid)
     {
-        return grid_manager.getGrid(grid).getVertLines(poly);
+        return grid_manager.getGrid(grid).getPolygon_VerticalLines(getGrid_Polygon_Outline(grid));
     }
 
     /**
      * Gets an array of polygons containing the horizontal lines separating rows based on the given
      * polygon for a specific grid.
      * @param grid The index of the grid. Base index 0.
-     * @param poly Polygon to create vertical lines from.
      * @return Array of polygons containing the vertical lines.
      */
-    public Polygon[] getGrid_HoriLines(int grid, Polygon poly)
+    public Polygon[] getGrid_Polygon_HorizontalLines(int grid)
     {
-        return grid_manager.getGrid(grid).getHoriLines(poly);
+        return grid_manager.getGrid(grid).getPolygon_HorizontalLines(getGrid_Polygon_Outline(grid));
     }
 
-    /**
-     * Set all the features for a specific grid at once.
-     * @param grid The index of the grid. Base index 0.
-     * @param tlX Top left x coordinate.
-     * @param tlY Top left y coordinate.
-     * @param trX Top right x coordinate.
-     * @param trY Top right y coordinate.
-     * @param blX Bottom left x coordinate.
-     * @param blY Bottom left y coordinate.
-     * @param brX Bottom right x coordinate.
-     * @param brY Bottom right y coordinate.
-     * @param row Number of rows.
-     * @param col Number of columns.
-     */
-    public void setGrid_AllFeatures(int grid, int tlX, int tlY, int trX, int trY, int blX, int blY, int brX, int brY,
-                                    int row, int col)
+    public void setGrid_MoveBy(int grid, int x, int y)
     {
-        Grid g = grid_manager.getGrid(grid);
-        if (g == null) {
-            g = new Grid();
-        }
-        g.setTopLeftX(tlX);
-        g.setTopLeftY(tlY);
-        g.setTopRightX(trX);
-        g.setTopRightY(trY);
-        g.setBottomLeftX(blX);
-        g.setBottomLeftY(blY);
-        g.setBottomRightX(brX);
-        g.setBottomRightY(brY);
-        g.setRows(row);
-        g.setColumns(col);
-        grid_manager.setGrid(grid, g);
+        grid_manager.getGrid(grid).moveBy(x, y);
     }
 
-    /**
-     * Set the number of grids.
-     * @param count Number to set for grid count.
-     */
-    public void setGridCount(int count)
+    public void setGrid_MoveTo(int grid, int x, int y)
     {
-        grid_manager.setGridNum(count);
+        grid_manager.getGrid(grid).moveTo(x, y);
+    }
+
+    public void setGrid_RotateBy(int grid, double degree)
+    {
+        grid_manager.getGrid(grid).rotateBy(degree);
+    }
+
+    public void setGrid_RotateTo(int grid, double degree)
+    {
+        grid_manager.getGrid(grid).rotateTo(degree);
+    }
+
+    public void setGrid_ResizeBy(int grid, int height, int width)
+    {
+        grid_manager.getGrid(grid).resizeBy(height, width);
+    }
+
+    public void setGrid_ResizeTo(int grid, int height, int width)
+    {
+        grid_manager.getGrid(grid).resizeTo(height, width);
+    }
+
+    public double getGrid_Angle(int grid)
+    {
+        return grid_manager.getGrid(grid).getAngle();
     }
 
     /**

@@ -195,100 +195,6 @@ public class GridManager {
 
 
   /**
-   * opens a grid file at the specified file path
-   * @param filepath file path to open grid file at
-   * @throws Exception when the grid manager cannot open the selected file
-   */
-  public void openGridManager(File filepath) throws Exception{
-     openGridManager(filepath.getAbsolutePath());
-  }
-
-  /**
-   * opens a grid file at the specified file path
-   * @param filepath file path to open grid file at
-   * @throws Exception when the grid manager cannot open the selected file
-   */
-  public void openGridManager(String filepath) throws Exception{
-    GridManager gm = new GridManager();
-
-    try{
-      BufferedReader in = new BufferedReader(new FileReader(filepath));
-      String line;
-      String prj = in.readLine();
-      if(prj.toLowerCase().indexOf("gridmanager file")==-1) throw new Exception();
-      else{
-        gm.setGridNum(Integer.parseInt(in.readLine()));
-        gm.leftRight=in.readLine().toLowerCase().equals("true");
-        gm.topBottom=in.readLine().toLowerCase().equals("true");
-        gm.spotDirection=in.readLine().toLowerCase().equals("true");
-
-        in.readLine();
-
-
-        for(int i=0; (i<gm.numGrids && (line=in.readLine())!=null && line.toLowerCase().indexOf("end*******/")==-1); i++){
-
-          StringTokenizer st = new StringTokenizer(line,"\t");
-          Grid tempGrid = new Grid(Integer.parseInt(st.nextToken()), Integer.parseInt(st.nextToken()), Integer.parseInt(st.nextToken()), Integer.parseInt(st.nextToken()), Integer.parseInt(st.nextToken()), Integer.parseInt(st.nextToken()), Integer.parseInt(st.nextToken()), Integer.parseInt(st.nextToken()), Integer.parseInt(st.nextToken()), Integer.parseInt(st.nextToken()));
-          gm.setGrid(i, tempGrid);
-          in.readLine();
-        }
-      }
-      in.close();
-
-      setGridNum(gm.getNumGrids());
-      leftRight = gm.leftRight;
-      topBottom = gm.topBottom;
-      spotDirection = gm.spotDirection;
-      for(int i=0; i<this.getNumGrids(); i++){
-        grids[i] = gm.grids[i];
-      }
-      setUpSpots();
-    } catch(Exception e){ throw new Exception();}
-
-  }
-
-  /**
-   * writes a grid file at the specified file path
-   * @param filepath file path to write grid file at
-   */
-  public void writeGridManager(File filepath){
-    this.writeGridManager(filepath.getAbsolutePath());
-  }
-
- /**
-   * writes a grid file at the specified file path
-   * @param filepath file path to write grid file at
-   */
-  public void writeGridManager(String filepath){
-    try{
-	if (!filepath.endsWith(".grid")) filepath+=".grid";
-        File f = new File(filepath);
-        File parent = f.getParentFile();
-
-	if(!parent.exists()) parent.mkdirs();
-	PrintWriter out = new PrintWriter(new BufferedWriter(new FileWriter(f)));
-	out.println("/****GridManager File");
-        out.println(numGrids);
-        out.println(leftRight);
-        out.println(topBottom);
-        out.println(spotDirection);
-        out.println("********/");
-
-
-
-        for(int i=0; i<numGrids; i++){
-          Grid temp = this.getGrid(i);
-          out.println("" + temp.getTopLeftX() + "\t" + temp.getTopLeftY() + "\t" + temp.getTopRightX() + "\t" + temp.getTopRightY() + "\t" + temp.getBottomLeftX() + "\t" + temp.getBottomLeftY() + "\t" + temp.getBottomRightX() + "\t" + temp.getBottomRightY() + "\t" + temp.getRows()+ "\t" + temp.getColumns());
-          out.println("********/");
-
-        }
-
-        out.println("End********/");
-        out.close();
-        } catch(IOException e){}
-  }
-
-  /**
    * sets the gene list
    * @param gl gene list with all the gene names from the godlist
    */
@@ -553,13 +459,16 @@ public class GridManager {
    * @param y y-coordinate
    * @return grid number at a given point and return -1 if no grid contains the given point
    */
+  /*
   public int getGridAtPoint(int x, int y){
     for(int i=0; i<grids.length; i++){
       if(grids[i].getTranslatedPolygon()!=null && grids[i].getTranslatedPolygon().contains(x,y)) return i;
     }
     return -1;
   }
-  
+  */
+
+  /*
   public Point[] getGridCorners(int x, int y) {
 	  int currGridNum = getGridAtPoint(x,y);
 	  Grid currGrid = getGrid(currGridNum);
@@ -568,7 +477,9 @@ public class GridManager {
 	  //int actualSpotNum = getActualSpotNum(currGridNum, transSpotNum);
 	  return getGridCornersFromTransformedSpotNumber(currGridNum, transSpotNum);
   }
-  
+  */
+
+  /*
   public Point[] getGridCornersFromTransformedSpotNumber(int currGridNum, int transSpotNum) {
 	  Grid currGrid = getGrid(currGridNum);
 	  Point[] retVal = new Point[4];
@@ -589,15 +500,15 @@ public class GridManager {
 	  for (int currRow = 0; (currRow < currGrid.getRows() && !found) ; currRow++) {
 		  for (int currCol = 0; (currCol < currGrid.getColumns() && !found); currCol++){
 			  Point currColRow = currGrid.getColRow((int)currX+3, (int)currY+3); //move us into the grid square just a tiny bit and find the colrow
-			  /*System.out.print("Got colrow at ");
-			  System.out.print((int)currX+1);
-			  System.out.print(", ");
-			  System.out.print((int)currY+1);
-			  System.out.print(" which was ");
-			  System.out.print(currColRow.x);
-			  System.out.print(".");
-			  System.out.print(currColRow.y);
-			  System.out.print("\n");*/
+			  //System.out.print("Got colrow at ");
+			  //System.out.print((int)currX+1);
+			  //System.out.print(", ");
+			  //System.out.print((int)currY+1);
+			  //System.out.print(" which was ");
+			  //System.out.print(currColRow.x);
+			  //System.out.print(".");
+			  //System.out.print(currColRow.y);
+			  //System.out.print("\n");
 			  if (currColRow != null) {
 				  int currTransSpotNum = getTransformedSpotNum(currGridNum, currColRow.x, currColRow.y);
 				  if (currTransSpotNum == transSpotNum)//we found it!
@@ -631,7 +542,8 @@ public class GridManager {
 	if (!found) retVal = null;
 	return retVal;
   }
-  
+  */
+
   /**
    * Returns the number of spots on each grid
    * Deprecated. DO NOT USE!

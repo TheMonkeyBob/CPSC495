@@ -174,7 +174,7 @@ public class SegmentDisplay extends JPanel {
     //draws the grid around the spot
     private void drawCell(Graphics g) {
         g.setColor(Color.yellow);
-        Polygon p = engine.getSample_Grid_TranslatedPolygon(myNumber, engine.getSample_CurrentGridNum(myNumber));
+        Polygon p = engine.getSample_Grid_Polygon_Outline(myNumber, engine.getSample_CurrentGridNum(myNumber));
         Polygon q = new Polygon();
         if(p!=null) {
             for(int j=0; j<p.xpoints.length; j++){
@@ -289,7 +289,7 @@ public class SegmentDisplay extends JPanel {
      * @param grid grid number
      */
     public void setSpots(int grid){
-        Polygon p = engine.getSample_Grid_TranslatedPolygon(myNumber, grid);
+        Polygon p = engine.getSample_Grid_Polygon_Outline(myNumber, grid);
         Polygon q = new Polygon();
         if(p!=null) {
             for(int j=0; j<p.xpoints.length; j++){

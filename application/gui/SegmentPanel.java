@@ -649,7 +649,7 @@ public class SegmentPanel extends JPanel
     int cellHeight;
     public void setCurrentCell()
     {
-        Polygon p = engine.getSample_Grid_TranslatedPolygon(myNumber, engine.getSample_CurrentGridNum(myNumber));
+        Polygon p = engine.getSample_Grid_Polygon_Outline(myNumber, engine.getSample_CurrentGridNum(myNumber));
         Polygon q = new Polygon();
         if (p != null)
         {

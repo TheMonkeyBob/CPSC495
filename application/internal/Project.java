@@ -155,15 +155,35 @@ public class Project
         return 0;
     }
 
+    public void addSample_Grid(int sample, int leftX, int rightX, int topY, int bottomY, double angle, int rows, int columns)
+    {
+        sample_list.get(sample).addGrid(leftX, rightX, topY, bottomY, angle, rows, columns);
+    }
+
+    public void addSample_Grid(int sample, int tlX, int tlY, int trX, int trY, int bX, int bY, int rows, int columns)
+    {
+        sample_list.get(sample).addGrid(tlX, tlY, trX, trY, bX, bY, rows, columns);
+    }
+
+    public void removeSample_Grid(int sample, int grid)
+    {
+        sample_list.get(sample).removeGrid(grid);
+    }
+
+    public Polygon getSample_Grid_Polygon_Master(int sample, int grid)
+    {
+        return sample_list.get(sample).getGrid_Polygon_Master(grid);
+    }
+
     /**
      * Gets the polygon for the specified grid of the specified sample.
      * @param sample The index of the sample. Base index 0.
      * @param grid The index of the grid. Base index 0.
      * @return The polygon of the sample's grid.
      */
-    public Polygon getSample_Grid_Polygon(int sample, int grid)
+    public Polygon getSample_Grid_Polygon_Base(int sample, int grid)
     {
-        return sample_list.get(sample).getGrid_Polygon(grid);
+        return sample_list.get(sample).getGrid_Polygon_Base(grid);
     }
 
     /**
@@ -172,9 +192,9 @@ public class Project
      * @param grid The index of the grid. Base index 0.
      * @return The translated polygon of the sample's grid.
      */
-    public Polygon getSample_Grid_TranslatedPolygon(int sample, int grid)
+    public Polygon getSample_Grid_Polygon_Outline(int sample, int grid)
     {
-        return sample_list.get(sample).getGrid_TranslatedPolygon(grid);
+        return sample_list.get(sample).getGrid_Polygon_Outline(grid);
     }
 
     /**
@@ -182,12 +202,11 @@ public class Project
      * polygon for a specific grid for a specific sample.
      * @param sample The index of the sample. Base index 0.
      * @param grid The index of the grid. Base index 0.
-     * @param poly Polygon to create vertical lines from.
      * @return Array of polygons containing the vertical lines.
      */
-    public Polygon[] getSample_Grid_VertLines(int sample, int grid, Polygon poly)
+    public Polygon[] getSample_Grid_Polygon_VerticalLines(int sample, int grid)
     {
-        return sample_list.get(sample).getGrid_VertLines(grid, poly);
+        return sample_list.get(sample).getGrid_Polygon_VerticalLines(grid);
     }
 
     /**
@@ -195,43 +214,46 @@ public class Project
      * polygon for a specific grid for a specific sample.
      * @param sample The index of the sample. Base index 0.
      * @param grid The index of the grid. Base index 0.
-     * @param poly Polygon to create vertical lines from.
      * @return Array of polygons containing the vertical lines.
      */
-    public Polygon[] getSample_Grid_HoriLines(int sample, int grid, Polygon poly)
+    public Polygon[] getSample_Grid_Polygon_HorizontalLines(int sample, int grid)
     {
-        return sample_list.get(sample).getGrid_HoriLines(grid, poly);
+        return sample_list.get(sample).getGrid_Polygon_HorizontalLines(grid);
     }
 
-    /**
-     * Set all the features for a specific grid for a specific sample at once.
-     * @param sample The index of the sample. Base index 0.
-     * @param grid The index of the grid. Base index 0.
-     * @param tlX Top left x coordinate.
-     * @param tlY Top left y coordinate.
-     * @param trX Top right x coordinate.
-     * @param trY Top right y coordinate.
-     * @param blX Bottom left x coordinate.
-     * @param blY Bottom left y coordinate.
-     * @param brX Bottom right x coordinate.
-     * @param brY Bottom right y coordinate.
-     * @param row Number of rows.
-     * @param col Number of columns.
-     */
-    public void setSample_Grid_AllFeatures(int sample, int grid, int tlX, int tlY, int trX, int trY, int blX, int blY,
-                                           int brX, int brY, int row, int col)
+    public void setSample_Grid_MoveBy(int sample, int grid, int x, int y)
     {
-        sample_list.get(sample).setGrid_AllFeatures(grid, tlX, tlY, trX, trY, blX, blY, brX, brY, row, col);
+        sample_list.get(sample).setGrid_MoveBy(grid, x, y);
     }
 
-    /**
-     * Set the number of grids for the specified sample.
-     * @param sample The index of the sample. Base index 0.
-     * @param count Number to set for grid count.
-     */
-    public void setSample_GridCount(int sample, int count)
+    public void setSample_Grid_MoveTo(int sample, int grid, int x, int y)
     {
-        sample_list.get(sample).setGridCount(count);
+        sample_list.get(sample).setGrid_MoveTo(grid, x, y);
+    }
+
+    public void setSample_Grid_RotateBy(int sample, int grid, double degree)
+    {
+        sample_list.get(sample).setGrid_RotateBy(grid, degree);
+    }
+
+    public void setSample_Grid_RotateTo(int sample, int grid, double degree)
+    {
+        sample_list.get(sample).setGrid_RotateTo(grid, degree);
+    }
+
+    public void setSample_Grid_ResizeBy(int sample, int grid, int height, int width)
+    {
+        sample_list.get(sample).setGrid_ResizeBy(grid, height, width);
+    }
+
+    public void setSample_Grid_ResizeTo(int sample, int grid, int height, int width)
+    {
+        sample_list.get(sample).setGrid_ResizeTo(grid, height, width);
+    }
+
+    public double getSample_Grid_Angle(int sample, int grid)
+    {
+        return sample_list.get(sample).getGrid_Angle(grid);
     }
 
     /**

@@ -34,7 +34,9 @@ import application.internal.Engine;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 
 /**
  * ImageDisplayPanel is a JPanel which displays a microarray image.
@@ -68,6 +70,8 @@ public class ImageDisplayPanel extends JPanel {
                 drawGrids(g);
             }
         };
+
+
 
         try {
             jbInit();
@@ -150,8 +154,9 @@ public class ImageDisplayPanel extends JPanel {
     }
 
     private void jbInit() throws Exception {
-        this.addMouseListener(new java.awt.event.MouseAdapter() {
-            public void mouseEntered(MouseEvent e) {
+        this.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e)
+            {
                 this_mouseEntered(e);
             }
         });
@@ -186,18 +191,18 @@ public class ImageDisplayPanel extends JPanel {
 
     //draws the grids on the panel
     private void drawGrids(Graphics g) {
-        for(int i = 0; i<engine.getSample_GridCount(myNumber); i++){
-            Polygon p = engine.getSample_Grid_Polygon(myNumber, i);
+        for(int i = 0; i<gridCount; i++){
+            Polygon p = basepoly_list.get(i);
             if(p!=null ){
-                Polygon newP = engine.getSample_Grid_TranslatedPolygon(myNumber, i);
+                Polygon newP = outerpoly_list.get(i);
                 for(int j=0; j<p.xpoints.length; j++){
                     p.xpoints[j]=screenX(p.xpoints[j]);
                     p.ypoints[j]=screenY(p.ypoints[j]);
                     newP.xpoints[j]=screenX(newP.xpoints[j]);
                     newP.ypoints[j]=screenY(newP.ypoints[j]);
                 }
-                Polygon[] vertLines = engine.getSample_Grid_VertLines(myNumber, i, newP);
-                Polygon[] horiLines = engine.getSample_Grid_HoriLines(myNumber, i, newP);
+                Polygon[] vertLines = vertlines_list.get(i);
+                Polygon[] horiLines = horilines_list.get(i);
 
                 if(i == current_grid_number) {
                     //Current Grid. Draw bounding rectangles.
@@ -242,5 +247,41 @@ public class ImageDisplayPanel extends JPanel {
     public void setCurrentGridNumber(int number)
     {
         current_grid_number = number;
+    }
+
+    private int gridCount = 0;
+    private ArrayList<Double> angle_list = new ArrayList<>();
+    private ArrayList<Polygon> masterpoly_list = new ArrayList<>();
+    private ArrayList<Polygon> basepoly_list = new ArrayList<>();
+    private ArrayList<Polygon> outerpoly_list = new ArrayList<>();
+    private ArrayList<Polygon[]> vertlines_list = new ArrayList<>();
+    private ArrayList<Polygon[]> horilines_list = new ArrayList<>();
+    public void addGrid(double angle, Polygon master, Polygon base, Polygon outer, Polygon[] vert, Polygon[] hori)
+    {
+        angle_list.add(angle);
+        masterpoly_list.add(master);
+        basepoly_list.add(base);
+        outerpoly_list.add(outer);
+        vertlines_list.add(vert);
+        horilines_list.add(hori);
+        gridCount = basepoly_list.size();
+    }
+
+    public Object[] getGrid(int i)
+    {
+        Object[] list = new Object[]{angle_list.get(i), masterpoly_list.get(i), basepoly_list.get(i),
+                outerpoly_list.get(i), vertlines_list.get(i), horilines_list.get(i)};
+        return list;
+    }
+
+    public void setNewGridDimensions(int grid, double angle, Polygon master, Polygon base, Polygon outer, Polygon[] vert, Polygon[] hori)
+    {
+        angle_list.set(grid, angle);
+        masterpoly_list.set(grid, master);
+        basepoly_list.set(grid, base);
+        outerpoly_list.set(grid, outer);
+        vertlines_list.set(grid, vert);
+        horilines_list.set(grid, hori);
+        repaint();
     }
 }

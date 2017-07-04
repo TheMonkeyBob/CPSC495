@@ -9,10 +9,6 @@ import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.awt.event.MouseEvent;
-import java.awt.event.MouseListener;
-import java.awt.image.MemoryImageSource;
-import java.awt.image.PixelGrabber;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 
@@ -62,6 +58,10 @@ class TabPanel extends JPanel {
     private int segmentMode;
     private GridPanel panel_Grid;
 
+    private JScrollPane scrollPane_MainImage;
+
+    private ImageDisplay imageDisplay;
+
     /**Automatic Flagging Options Dialog associated with the SegmentFrame associated with this SegmentPanel*/
     //protected AutoFlaggingOptionsDialog afod;
     /**flag manager associated with these grids*/
@@ -93,33 +93,6 @@ class TabPanel extends JPanel {
         gbl_panel.rowWeights = new double[] { Double.MIN_VALUE };
         this.setLayout(gbl_panel);
 
-        imageDisplayPanel = new ImageDisplayPanel(engine, buildImage(), myNumber);
-        imageDisplayPanel.getCanvas().addMouseListener(new MouseListener()
-        {
-            @Override
-            public void mouseClicked(MouseEvent e) {
-                coordinateFound(xCoordinate(e.getX()), yCoordinate(e.getY()));
-            }
-
-            @Override
-            public void mousePressed(MouseEvent e) {
-            }
-
-            @Override
-            public void mouseReleased(MouseEvent e) {
-            }
-
-            @Override
-            public void mouseEntered(MouseEvent e) {
-            }
-
-            @Override
-            public void mouseExited(MouseEvent e) {
-            }
-        });
-        JScrollPane scroll = new JScrollPane(imageDisplayPanel);
-        scroll.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_ALWAYS);
-        scroll.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_ALWAYS);
         GridBagConstraints gbc_scrollField = new GridBagConstraints();
         gbc_scrollField.insets = new Insets(5, 5, 5, 5);
         gbc_scrollField.fill = GridBagConstraints.BOTH;
@@ -131,7 +104,8 @@ class TabPanel extends JPanel {
         gbc_scrollField.insets = new Insets(5, 5, 0, 0); // top, left,
         // bottom,
         // right
-        this.add(scroll, gbc_scrollField);
+        imageDisplay = new ImageDisplay(myNumber, engine, this);
+        this.add(imageDisplay, gbc_scrollField);
         // textField.setColumns(10);
 
         JSlider slider = new JSlider(JSlider.HORIZONTAL, 0, 100, 0);
@@ -173,169 +147,6 @@ class TabPanel extends JPanel {
         // right
         this.add(panel_Grid, gbc_gridding);
 
-        /*
-        JLabel lblNewLabel = new JLabel("Select a previously saved grid or click Add to create a new one.");
-        lblNewLabel.setBounds(10, 20, 360, 14);
-        panel_Grid.add(lblNewLabel);
-
-        comboBox = new JComboBox<>();
-        comboBox.addItem("Previously saved grid.");
-        comboBox.setBounds(10, 45, 150, 20);
-        comboBox.addActionListener(changedSelection ->
-        {
-            if (!comboboxIsChanging && comboBox.getSelectedIndex() != selectedProfileNum)
-            {
-                if (comboBox.getSelectedIndex() == 0)
-                {
-                    comboBox.setSelectedIndex(selectedProfileNum);
-                }
-                else
-                {
-                    comboboxIsChanging = true;
-                    if (selectedProfileNum != 0)
-                    {
-                        int selection = JOptionPane.showOptionDialog(this,
-                                "Changing the profile may remove grids from this sample.\n"
-                                        + "This cannot be undone. Are you sure you want to change the profile?",
-                                "Profile Change!", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null,
-                                null);
-                        if (selection == JOptionPane.OK_OPTION)
-                        {
-                            int i = comboBox.getSelectedIndex()-1;
-                            engine.setSample_GridCount(myNumber, engine.getGridProfile_Number(i));
-                            engine.setSample_GridHorizontal(myNumber, engine.getGridProfile_Horizontal(i));
-                            engine.setSample_GridVertical(myNumber, engine.getGridProfile_Vertical(i));
-                            engine.setSample_GridDirection(myNumber, engine.getGridProfile_Direction(i));
-                            selectedProfileNum = i;
-                            updateGridCount();
-                        }
-                        else
-                        {
-                            comboBox.setSelectedIndex(selectedProfileNum);
-                        }
-                    }
-                    else
-                    {
-                        int i = comboBox.getSelectedIndex();
-                        engine.setSample_GridCount(myNumber, engine.getGridProfile_Number(i));
-                        engine.setSample_GridHorizontal(myNumber, engine.getGridProfile_Horizontal(i));
-                        engine.setSample_GridVertical(myNumber, engine.getGridProfile_Vertical(i));
-                        engine.setSample_GridDirection(myNumber, engine.getGridProfile_Direction(i));
-                        selectedProfileNum = i;
-                        updateGridCount();
-                    }
-                    comboboxIsChanging = false;
-                }
-            }
-        });
-        panel_Grid.add(comboBox);
-
-        JButton btnAdd = new JButton("Add");
-        btnAdd.addActionListener(addBut ->
-        {
-            GridSetupDialog god = new GridSetupDialog(main);
-            god.setOptions("", engine.getSample_GridCount(myNumber), engine.getSample_GridHorizontal(myNumber),
-                    engine.getSample_GridVertical(myNumber), engine.getSample_GridDirection(myNumber));
-            god.setModal(true);
-            god.pack();
-            god.setVisible(true);
-            if (god.getOK())
-            {
-                comboboxIsChanging = true;
-                int cont = JOptionPane.YES_OPTION;
-                // TODO Deletion warning commented out for now
-                // if(numDelete>0) cont =
-                // JOptionPane.showConfirmDialog(this.getDesktopPane(),
-                // "Warning! You Have Selected " + numDelete + " Fewer Grids For
-                // Your Image.\nDo You Wish To Delete " + (numDelete==1? "This
-                // Grid And All Data Related To It?":"These " + numDelete + "
-                // Grids And All Data Related To Them"), "Warning! You May Be
-                // Deleting Important Data", JOptionPane.YES_NO_OPTION,
-                // JOptionPane.WARNING_MESSAGE);
-                if (cont == JOptionPane.YES_OPTION)
-                {
-                    engine.setSample_GridCount(myNumber, god.getGridNum());
-                    engine.setSample_GridHorizontal(myNumber, god.getHorizontal());
-                    engine.setSample_GridVertical(myNumber, god.getVertical());
-                    engine.setSample_GridDirection(myNumber, god.getFirstSpot());
-
-                    updateGridCount();
-                    main.addGridProfile(god.getProfileName(), god.getGridNum(), god.getHorizontal(), god.getVertical(),
-                            god.getFirstSpot());
-                }
-                selectedProfileNum = comboBox.getItemCount()-1;
-                comboboxIsChanging = false;
-            }
-        });
-        btnAdd.setBounds(169, 45, 60, 23);
-        panel_Grid.add(btnAdd);
-
-        JButton btnModify = new JButton("Modify");
-        btnModify.addActionListener(modBut ->
-        {
-            if (comboBox.getSelectedIndex() != 0)
-            {
-                GridSetupDialog god = new GridSetupDialog(main);
-                god.setOptions(comboBox.getItemAt(comboBox.getSelectedIndex()), engine.getSample_GridCount(myNumber),
-                        engine.getSample_GridHorizontal(myNumber), engine.getSample_GridVertical(myNumber),
-                        engine.getSample_GridDirection(myNumber));
-                god.setModal(true);
-                god.pack();
-                god.setVisible(true);
-                if (god.getOK())
-                {
-                    comboboxIsChanging = true;
-                    int cont = JOptionPane.YES_OPTION;
-                    // TODO Deletion warning commented out for now
-                    // if(numDelete>0) cont =
-                    // JOptionPane.showConfirmDialog(this.getDesktopPane(),
-                    // "Warning! You Have Selected " + numDelete + " Fewer Grids
-                    // For Your Image.\nDo You Wish To Delete " + (numDelete==1?
-                    // "This Grid And All Data Related To It?":"These " +
-                    // numDelete + " Grids And All Data Related To Them"),
-                    // "Warning! You May Be Deleting Important Data",
-                    // JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-                    if (cont == JOptionPane.YES_OPTION)
-                    {
-                        main.modifyGridProfile(comboBox.getSelectedIndex()-1, god.getProfileName(), god.getGridNum(),
-                                god.getHorizontal(), god.getVertical(), god.getFirstSpot());
-                    }
-                    comboboxIsChanging = false;
-                }
-            }
-        });
-        btnModify.setBounds(240, 45, 75, 23);
-        panel_Grid.add(btnModify);
-
-        JButton btnDelete = new JButton("Delete");
-        btnDelete.addActionListener(deleteBut ->
-        {
-            if (comboBox.getSelectedIndex() != 0)
-            {
-                comboboxIsChanging = true;
-                int selection = JOptionPane.showOptionDialog(this,
-                        "This will delete the selected profile for all samples.\n"
-                                + "All grids connected to the profile will be removed.\n"
-                                + "This cannot be undone. Are you sure you want to delete?",
-                        "Delete Grid Profile!", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE, null, null,
-                        null);
-                if (selection == JOptionPane.OK_OPTION)
-                {
-                    main.removeGridProfile(comboBox.getSelectedIndex()-1);
-                }
-                selectedProfileNum = 0;
-                comboboxIsChanging = false;
-            }
-        });
-        btnDelete.setBounds(324, 45, 70, 23);
-        panel_Grid.add(btnDelete);
-
-        gridScrollPanePanel = new JPanel();
-        gridScrollPane = new JScrollPane(gridScrollPanePanel);
-        gridScrollPane.setBounds(10, 70, 600, 100);
-        panel_Grid.add(gridScrollPane);
-        */
-
         // Segmentation panel starts here
         segment = new SegmentPanel(main, myNumber, engine);
         TitledBorder seg_title = BorderFactory.createTitledBorder(blackline, "Segmentation");
@@ -353,308 +164,19 @@ class TabPanel extends JPanel {
         gbc_segment.weighty = 1.0;
         gbc_segment.insets = new Insets(0, 5, 5, 5); // top, left, bottom, right
         this.add(segment, gbc_segment);
-/*
-
-        JLabel lblNewLabel_1 = new JLabel("Choose one of the following segmentation options:");
-        lblNewLabel_1.setBounds(10, 20, 300, 14);
-        segment.add(lblNewLabel_1);
-
-        ipGrn = engine.getSample_GreenImagePlus(myNumber);
-        ipRed = engine.getSample_RedImagePlus(myNumber);
-
-        JRadioButton rdbtnNewRadioButton = new JRadioButton("Adaptive Circle");
-        rdbtnNewRadioButton.setBounds(310, 16, 110, 23);
-        rdbtnNewRadioButton.addActionListener(adaptiveCircle ->
-        {
-            segmentationMode(segment);
-            segmentMode = GeneImageAspect.ADAPTIVE_CIRCLE;
-            engine.setSample_SegmentationMethod(myNumber, segmentMode);
-            refreshSegmentation();
-        });
-        segment.add(rdbtnNewRadioButton);
-
-        JRadioButton rdbtnNewRadioButton_1 = new JRadioButton("Seeded Region Growing");
-        rdbtnNewRadioButton_1.setBounds(420, 16, 160, 23);
-        rdbtnNewRadioButton_1.addActionListener(seededRegionButton ->
-        {
-            segmentationMode(segment);
-            segmentMode = GeneImageAspect.SEEDED_REGION;
-            engine.setSample_SegmentationMethod(myNumber, segmentMode);
-            refreshSegmentation();
-        });
-
-        segment.add(rdbtnNewRadioButton_1);
-
-        // Button group so only one radio button can be active at one time.
-        group1 = new ButtonGroup();
-        group1.add(rdbtnNewRadioButton);
-        group1.add(rdbtnNewRadioButton_1);
-
-        JLabel lblThreshold = new JLabel("Threshold");
-        lblThreshold.setBounds(430, 50, 60, 14);
-        segment.add(lblThreshold);
-
-        JLabel lblSpinnerGrid = new JLabel("Grid");
-        lblSpinnerGrid.setBounds(430, 110, 40, 14);
-        segment.add(lblSpinnerGrid);
-
-        SpinnerModel spinnerGrid = new SpinnerNumberModel(1, // initial value
-                1, // min
-                100, // max
-                1);// step
-
-        spnGrid = new JSpinner(spinnerGrid);
-        spnGrid.setBounds(480, 110, 40, 20);
-        segment.add(spnGrid);
-
-        spnGrid.addChangeListener(changePosition ->
-        {
-            if (sdGreenSlide != null && !segmentationIsChanging)
-            {
-                moveTo((Integer) spnGrid.getValue(), (Integer) spnSpot.getValue());
-                updateGeneInfo(segmentMode);
-            }
-        });
-
-        JLabel lblSpinnerSpot = new JLabel("Spot");
-        lblSpinnerSpot.setBounds(430, 150, 40, 14);
-        segment.add(lblSpinnerSpot);
-
-        SpinnerModel spinnerSpot = new SpinnerNumberModel(1, // initial
-                // value
-                1, // min
-                552, // max
-                1);// step
-
-        spnSpot = new JSpinner(spinnerSpot);
-        spnSpot.setBounds(480, 150, 40, 20);
-        segment.add(spnSpot);
-
-        spnSpot.addChangeListener(changePosition ->
-        {
-            if (sdGreenSlide != null && !segmentationIsChanging)
-            {
-                moveTo((Integer) spnGrid.getValue(), (Integer) spnSpot.getValue());
-                updateGeneInfo(segmentMode);
-            }
-        });
-        JCheckBox chckbxNewCheckBox = new JCheckBox("Flag spot");
-        chckbxNewCheckBox.setBounds(530, 150, 97, 23);
-        segment.add(chckbxNewCheckBox);
-
-        slidderSeededThreshold = new JSlider(JSlider.HORIZONTAL, 5, 50, 10);
-        slidderSeededThreshold.setMajorTickSpacing(15);
-        slidderSeededThreshold.setMinorTickSpacing(5);
-        slidderSeededThreshold.setPaintTicks(true);
-        slidderSeededThreshold.setPaintLabels(true);
-        slidderSeededThreshold.setBounds(500, 50, 150, 40);
-        segment.add(slidderSeededThreshold);
-        slidderSeededThreshold.addChangeListener(seededThresholdChange ->
-        {
-            if (sdGreenSlide != null)
-            {
-                updateGeneInfo(segmentMode);
-                engine.setSample_MethodThreshold(myNumber, slidderSeededThreshold.getValue());
-                sdGreenSlide.repaint();
-                sdRedSlide.repaint();
-            }
-        });
-
-        JLabel lblGreen = new JLabel("Green");
-        lblGreen.setBounds(90, 250, 40, 14);
-        segment.add(lblGreen);
-
-        JLabel lblRed = new JLabel("Red");
-        lblRed.setBounds(300, 250, 40, 14);
-        segment.add(lblRed);
-        */
-        /*
-        // Expression panel starts here
-        JPanel expression = new JPanel();
-        TitledBorder exp_title = BorderFactory.createTitledBorder(blackline, "Gene Expression Ratios");
-        exp_title.setTitleJustification(TitledBorder.LEFT);
-        expression.setBorder(exp_title);
-        expression.setLayout(null);
-        GridBagConstraints gbc_expression = new GridBagConstraints();
-        gbc_expression.insets = new Insets(0, 5, 5, 0);
-        gbc_expression.fill = GridBagConstraints.BOTH;
-        gbc_expression.gridx = 1;
-        gbc_expression.gridy = 3;
-        gbc_expression.gridheight = 1;
-        gbc_expression.gridwidth = 2;
-        gbc_expression.weightx = 1.0;
-        gbc_expression.weighty = 1.0;
-        gbc_expression.insets = new Insets(0, 5, 0, 5); // top, left,
-        // bottom,
-        // right
-        this.add(expression, gbc_expression);
-
-        JLabel lblNewLabel_2 = new JLabel("Select the colour representing the control in this microarray:");
-        lblNewLabel_2.setBounds(10, 20, 350, 14);
-        expression.add(lblNewLabel_2);
-
-        JRadioButton rdbtnGreen = new JRadioButton("Green");
-        rdbtnGreen.setBounds(370, 16, 60, 23);
-        expression.add(rdbtnGreen);
-
-        JRadioButton rdbtnRed = new JRadioButton("Red");
-        rdbtnRed.setBounds(460, 16, 60, 23);
-        expression.add(rdbtnRed);
-
-        // Button group so only one radio button can be active at one time.
-
-        group2 = new ButtonGroup();
-        group2.add(rdbtnGreen);
-        group2.add(rdbtnRed);
-
-        JLabel lblNewLabel_3 = new JLabel("Select a method for calculating the gene expression levels:");
-        lblNewLabel_3.setBounds(10, 60, 350, 14);
-        expression.add(lblNewLabel_3);
-
-        String[] signal = { "Total Signal", "Average Signal", "Total Signal BG Subtraction",
-                "Average Signal BG Subtraction" };
-        JComboBox<String> comboBox_1 = new JComboBox<String>(signal);
-        comboBox_1.setBounds(360, 58, 200, 20);
-        expression.add(comboBox_1);
-
-        comboBox_1.addActionListener(combo_1 ->
-        {
-            if (sdGreenSlide != null)
-            {
-                switch (comboBox_1.getSelectedIndex())
-                {
-                    case 0:
-                        ratioMethod = GeneImageAspect.TOTAL_SIGNAL;
-                        break;
-                    case 1:
-                        ratioMethod = GeneImageAspect.AVG_SIGNAL;
-                        break;
-                    case 2:
-                        ratioMethod = GeneImageAspect.TOTAL_SUBTRACT_BG;
-                        break;
-                    case 3:
-                        ratioMethod = GeneImageAspect.AVG_SUBTRACT_BG;
-                        break;
-                }
-                engine.setSample_RatioMethod(myNumber, ratioMethod);
-
-                updateGeneInfo(segmentMode);
-            }
-        });
-        comboBox_1.setSelectedIndex(0);
-
-        textArea_3 = new JTextArea();
-        textArea_3.setBounds(10, 85, 140, 140);
-        expression.add(textArea_3);
-        textArea_3.setColumns(10);
-
-        JLabel lblGreen_1 = new JLabel("Green");
-        lblGreen_1.setBounds(60, 250, 40, 14);
-        expression.add(lblGreen_1);
-
-        textArea_4 = new JTextArea();
-        textArea_4.setBounds(215, 85, 140, 140);
-        expression.add(textArea_4);
-        textArea_4.setColumns(10);
-
-        JLabel lblRed_1 = new JLabel("Red");
-        lblRed_1.setBounds(280, 250, 40, 14);
-        expression.add(lblRed_1);
-
-        textArea_5 = new JTextArea();
-        textArea_5.setBounds(410, 85, 140, 140);
-        expression.add(textArea_5);
-        textArea_5.setColumns(10);
-
-        JLabel lblCombined = new JLabel("Combined");
-        lblCombined.setBounds(450, 250, 100, 14);
-        expression.add(lblCombined);
-        */
     }
 
-    private Image buildImage()
-    {
-        Image green = engine.getSample_GreenImage(myNumber);
-        Image red = engine.getSample_RedImage(myNumber);
-
-        Dimension redDim = new Dimension(red.getWidth(null), red.getHeight(null));
-        Dimension greenDim = new Dimension(green.getWidth(null), green.getHeight(null));
-        int w = greenDim.width;
-        int h = greenDim.height;
-
-        // Use green as base.
-        int[] pixels = new int[w * h];
-        int[] redpixels = new int[w * h];
-
-        PixelGrabber pg = new PixelGrabber(green, 0, 0, w, h, pixels, 0, w);
-        PixelGrabber redpg = new PixelGrabber(red, 0, 0, w, h, redpixels, 0, w);
-        try
-        {
-            pg.grabPixels();
-            redpg.grabPixels();
-        } catch (Exception e)
-        {
-            System.out.print("(Error Grabbing Pixels) " + e);
-        }
-
-        for (int i = 0; i < pixels.length; i++)
-        {
-            int p = pixels[i];
-            int redp = redpixels[i];
-            int a = (p >> 24) & 0xFF;
-            int r = (redp >> 16) & 0xFF;
-            int b = 0;
-            int g = (p >> 8) & 0xFF;
-
-            pixels[i] = (a << 24 | r << 16 | g << 8 | b);
-        }
-        return createImage(new MemoryImageSource(w, h, pixels, 0, w));
-    }
-
-    public void addGrid(int num, int tlX, int tlY, int trX, int trY, int blX, int blY, int brX, int brY, int row, int col)
+    public void addGrid(int tlX, int tlY, int trX, int trY, int bX, int bY, int row, int col)
     {
         gridCount++;
-        engine.setSample_GridCount(myNumber, gridCount);
-        drawGrid(num, tlX, tlY, trX, trY, blX, blY, brX, brY, row, col);
+        engine.addSample_Grid(myNumber, tlX, tlY, trX, trY, bX, bY, row, col);
+        imageDisplay.addGrid();
         refreshSegmentation();
     }
 
-    protected void drawGrid(int num, int tlX, int tlY, int trX, int trY, int blX, int blY, int brX, int brY, int row, int col)
-    {
-        engine.setSample_Grid_AllFeatures(myNumber, num, tlX, tlY, trX, trY, blX, blY, brX, brY, row, col);
-
-        imageDisplayPanel.repaint();
-    }
-
-    private void coordinateFound(int x, int y)
+    public void coordinateFound(int x, int y)
     {
         panel_Grid.coordinatesFound(x, y);
-    }
-
-    /**
-     * gets the actual x-coordinate on the image based on the screen
-     * x-coordinate
-     *
-     * @param ex screen x-coordinate
-     * @return actual x-coordinate on the image based on the screen x-coordinate
-     */
-    public int xCoordinate(int ex)
-    {
-        return ((imageDisplayPanel.getCanvas().getSrcRect().x
-                + Math.round((float) ((ex) / imageDisplayPanel.getZoom()))));
-    }
-
-    /**
-     * gets the actual y-coordinate on the image based on the screen
-     * y-coordinate
-     *
-     * @param ey    screen y-coordinate
-     * @return actual y-coordinate on the image based on the screen y-coordinate
-     */
-    public int yCoordinate(int ey)
-    {
-        return ((imageDisplayPanel.getCanvas().getSrcRect().y
-                + Math.round((float) ((ey) / imageDisplayPanel.getZoom()))));
     }
 
     public void addToComboBox(String s, boolean focused)
@@ -678,7 +200,7 @@ class TabPanel extends JPanel {
         if (refocus)
         {
             comboBox.setSelectedIndex(i);
-            engine.setSample_GridCount(myNumber, engine.getGridProfile_Number(i));
+            //engine.setSample_GridCount(myNumber, engine.getGridProfile_Number(i));
             engine.setSample_GridHorizontal(myNumber, engine.getGridProfile_Horizontal(i));
             engine.setSample_GridVertical(myNumber, engine.getGridProfile_Vertical(i));
             engine.setSample_GridDirection(myNumber, engine.getGridProfile_Direction(i));
@@ -691,7 +213,7 @@ class TabPanel extends JPanel {
         if (i == comboBox.getSelectedIndex())
         {
             comboBox.setSelectedIndex(0);
-            engine.setSample_GridCount(myNumber, 0);
+            //engine.setSample_GridCount(myNumber, 0);
             //updateGridCount();
         }
         comboBox.removeItemAt(i);
@@ -844,7 +366,7 @@ class TabPanel extends JPanel {
      */
     public void setCurrentCell()
     {
-        Polygon p = engine.getSample_Grid_TranslatedPolygon(myNumber, engine.getSample_CurrentGridNum(myNumber));
+        Polygon p = engine.getSample_Grid_Polygon_Outline(myNumber, engine.getSample_CurrentGridNum(myNumber));
         Polygon q = new Polygon();
         if (p != null)
         {
@@ -905,5 +427,15 @@ class TabPanel extends JPanel {
         {
             textArea_4.setText("Ratio: N/A \nGreen Background: N/A \nGreen Foreground: N/A \nRed Background: N/A \nRed Foreground: N/A");
         }
+    }
+
+    public void setGridMode(int i)
+    {
+        imageDisplay.setGridMode(i);
+    }
+
+    public void zoomToGrid()
+    {
+        imageDisplay.zoomToCurrentGrid();
     }
 }
