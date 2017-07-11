@@ -101,8 +101,7 @@ public class Grid {
         setTopY(topLeftY);
         if (topRightX != topLeftX)
         {
-            //setAngle(0);
-            setAngle(Math.atan((topRightY - topLeftY) / (topRightX - topLeftX)));
+            setAngle(Math.atan(1.0 * (topRightY - topLeftY) / (topRightX - topLeftX)));
         }
         else
         {
@@ -112,12 +111,19 @@ public class Grid {
         setRows(rows);
         setColumns(columns);
 
-        double slope1 = 1.0 * (topRightY - topLeftY)/(topRightX - topLeftX);
+        double slope1 = 0;
+        if (topLeftX != topRightX)
+        {
+            slope1 = 1.0 * (topRightY - topLeftY) / (topRightX - topLeftX);
+        }
         int bottomLeftX, bottomLeftY;
-        if (slope1==0) {
+        if (slope1 == 0)
+        {
             bottomLeftX = topLeftX;
             bottomLeftY = bottomY;
-        } else {
+        }
+        else
+        {
             double slope2 = -1/slope1;
             double normalPointX = (topRightY - bottomY - (slope1 * topRightX) + (slope2 * bottomX)) / (slope2 - slope1);
             double normalPointY = bottomY - (slope2 * (bottomX - normalPointX));
@@ -127,11 +133,14 @@ public class Grid {
         setBottomY((int)Math.round(distance(topLeftX, topLeftY, bottomLeftX, bottomLeftY)) + getTopY());
     }
 
-    public void setAngle(double angle) {
+    public void setAngle(double angle)
+    {
+        System.out.println(angle);
         this.angle = angle;
     }
 
-    public double getAngle() {
+    public double getAngle()
+    {
         return angle;
     }
 

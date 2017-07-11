@@ -1,428 +1,430 @@
 package application.gui;
 
+import application.engine.GuiManager;
+
 import javax.swing.*;
-import java.util.ArrayList;
+import javax.swing.border.Border;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 
-/**
- * Created by Lukas Pihl
- */
-public class GridPanel extends JPanel
-{
-    private JButton button_AddGrid;
-    private JButton button_RemoveGrid;
-    private JButton button_Settings;
-    private JButton button_SaveGrids;
-    private JButton button_LoadGrids;
-    private JButton button_MoveGridTo;
-    private JButton button_MoveGrid;
-    private JButton button_RotateGrid;
-    private JButton button_AdvancedSettings;
-    private JButton button_ResizeGrid;
-    private JButton button_ZoomToGrid;
-    private JPanel panel_Grids;
-    private JScrollPane scrollPane_Grids;
+class GridPanel extends JPanel {
 
-    private final int X_START = 10;
-    private final int Y_START = 20;
+    private static final long serialVersionUID = 1L;
 
-    private TabPanel parent_panel;
-    private MainWindow main;
-    private ArrayList<GridPanelPanel> grid_list;
-    private GridPanelPanel new_gpp;
+    private JButton button_Cancel;
+    private JLabel label_Name;
+    private JLabel label_Grid;
+    private JLabel label_ClickTopLeft;
+    private JLabel label_ClickTopRight;
+    private JLabel label_ClickBottom;
+    private JLabel label_Rows;
+    private JLabel label_Columns;
+    private JTextField textField_Rows;
+    private JTextField textField_Columns;
+    private Border border_Blackline = BorderFactory.createLineBorder(Color.black);
+    private Border border_Yellowline = BorderFactory.createLineBorder(Color.yellow);
 
-    public GridPanel(MainWindow main, TabPanel parent)
+    private int myNumber;
+    private int mode = 0;
+    private boolean awaitingData = false;
+
+    private int topLeftX_temp;
+    private int topLeftY_temp;
+    private int topRightX_temp;
+    private int topRightY_temp;
+    private int bottomX_temp;
+    private int bottomY_temp;
+    private int rows_temp;
+    private int columns_temp;
+
+    private final int X_START = 0;
+    private final int Y_START = 0;
+
+    private GridingPanel parent_panel;
+    private GuiManager manager;
+
+    /**
+     * Create a new GridPanel
+     * @param parentPanel The GridingPanel that will use this GridPanel
+     * @param num The number of this GridPanel
+     */
+    public GridPanel(GuiManager manager, GridingPanel parentPanel, int num)
     {
-        this.main = main;
-        parent_panel = parent;
+        this.manager = manager;
+        myNumber = num;
+        parent_panel = parentPanel;
         setup();
     }
 
+    /**
+     * Sets up the GridPanel for use.
+     */
     private void setup()
     {
-        grid_list = new ArrayList<>();
-        new_gpp = null;
+        this.setSize(80, 40);
+        this.setPreferredSize(new Dimension(80, 40));
+        this.setLayout(null);
 
-        button_ZoomToGrid = new JButton();
-        button_ZoomToGrid.setIcon(ImgManager.GridZoomToButton_Up);
-        button_ZoomToGrid.setDisabledIcon(ImgManager.GridZoomToButton_Down);
-        button_ZoomToGrid.setDisabledSelectedIcon(ImgManager.GridZoomToButton_Down);
-        button_ZoomToGrid.setPressedIcon(ImgManager.GridZoomToButton_Down);
-        button_ZoomToGrid.setRolloverIcon(ImgManager.GridZoomToButton_Up);
-        button_ZoomToGrid.setRolloverSelectedIcon(ImgManager.GridZoomToButton_Up);
-        button_ZoomToGrid.setSelectedIcon(ImgManager.GridZoomToButton_Up);
-        button_ZoomToGrid.setBounds(X_START, Y_START, 30, 30);
-        button_ZoomToGrid.setBorder(BorderFactory.createEmptyBorder());
-        button_ZoomToGrid.addActionListener(ZoomToGridButtonAction -> this_ZoomToGridButtonAction());
-        button_ZoomToGrid.setToolTipText("Zoom to grid");
-        this.add(button_ZoomToGrid);
-
-        button_MoveGrid = new JButton();
-        button_MoveGrid.setIcon(ImgManager.GridMoveButton_Up);
-        button_MoveGrid.setDisabledIcon(ImgManager.GridMoveButton_Down);
-        button_MoveGrid.setDisabledSelectedIcon(ImgManager.GridMoveButton_Down);
-        button_MoveGrid.setPressedIcon(ImgManager.GridMoveButton_Down);
-        button_MoveGrid.setRolloverIcon(ImgManager.GridMoveButton_Up);
-        button_MoveGrid.setRolloverSelectedIcon(ImgManager.GridMoveButton_Up);
-        button_MoveGrid.setSelectedIcon(ImgManager.GridMoveButton_Up);
-        button_MoveGrid.setBounds(button_ZoomToGrid.getX() + button_ZoomToGrid.getWidth() + 5, Y_START, 30, 30);
-        button_MoveGrid.setBorder(BorderFactory.createEmptyBorder());
-        button_MoveGrid.addActionListener(MoveGridButtonAction -> this_MoveGridButtonAction());
-        button_MoveGrid.setToolTipText("Move grid");
-        this.add(button_MoveGrid);
-
-        button_RotateGrid = new JButton();
-        button_RotateGrid.setIcon(ImgManager.GridRotateButton_Up);
-        button_RotateGrid.setDisabledIcon(ImgManager.GridRotateButton_Down);
-        button_RotateGrid.setDisabledSelectedIcon(ImgManager.GridRotateButton_Down);
-        button_RotateGrid.setPressedIcon(ImgManager.GridRotateButton_Down);
-        button_RotateGrid.setRolloverIcon(ImgManager.GridRotateButton_Up);
-        button_RotateGrid.setRolloverSelectedIcon(ImgManager.GridRotateButton_Up);
-        button_RotateGrid.setSelectedIcon(ImgManager.GridRotateButton_Up);
-        button_RotateGrid.setBounds(button_MoveGrid.getX() + button_MoveGrid.getWidth() + 5, Y_START, 30, 30);
-        button_RotateGrid.setBorder(BorderFactory.createEmptyBorder());
-        button_RotateGrid.addActionListener(RotateGridButtonAction -> this_RotateGridButtonAction());
-        button_RotateGrid.setToolTipText("Rotate grid");
-        this.add(button_RotateGrid);
-
-        button_ResizeGrid = new JButton();
-        button_ResizeGrid.setIcon(ImgManager.GridResizeButton_Up);
-        button_ResizeGrid.setDisabledIcon(ImgManager.GridResizeButton_Down);
-        button_ResizeGrid.setDisabledSelectedIcon(ImgManager.GridResizeButton_Down);
-        button_ResizeGrid.setPressedIcon(ImgManager.GridResizeButton_Down);
-        button_ResizeGrid.setRolloverIcon(ImgManager.GridResizeButton_Up);
-        button_ResizeGrid.setRolloverSelectedIcon(ImgManager.GridResizeButton_Up);
-        button_ResizeGrid.setSelectedIcon(ImgManager.GridResizeButton_Up);
-        button_ResizeGrid.setBounds(button_RotateGrid.getX() + button_RotateGrid.getWidth() + 5, Y_START, 30, 30);
-        button_ResizeGrid.setBorder(BorderFactory.createEmptyBorder());
-        button_ResizeGrid.addActionListener(ResizeGridButtonAction -> this_ResizeGridButtonAction());
-        button_ResizeGrid.setToolTipText("Resize grid");
-        this.add(button_ResizeGrid);
-
-        button_MoveGridTo = new JButton();
-        button_MoveGridTo.setIcon(ImgManager.GridMoveToButton_Up);
-        button_MoveGridTo.setDisabledIcon(ImgManager.GridMoveToButton_Down);
-        button_MoveGridTo.setDisabledSelectedIcon(ImgManager.GridMoveToButton_Down);
-        button_MoveGridTo.setPressedIcon(ImgManager.GridMoveToButton_Down);
-        button_MoveGridTo.setRolloverIcon(ImgManager.GridMoveToButton_Up);
-        button_MoveGridTo.setRolloverSelectedIcon(ImgManager.GridMoveToButton_Up);
-        button_MoveGridTo.setSelectedIcon(ImgManager.GridMoveToButton_Up);
-        button_MoveGridTo.setBounds(button_ResizeGrid.getX() + button_ResizeGrid.getWidth() + 5, Y_START, 30, 30);
-        button_MoveGridTo.setBorder(BorderFactory.createEmptyBorder());
-        button_MoveGridTo.setToolTipText("Move grid to");
-        button_MoveGridTo.addActionListener(MoveGridToButtonAction -> this_MoveGridToButtonAction());
-        this.add(button_MoveGridTo);
-
-        button_AdvancedSettings = new JButton();
-        button_AdvancedSettings.setIcon(ImgManager.GridAdvancedButton_Up);
-        button_AdvancedSettings.setDisabledIcon(ImgManager.GridAdvancedButton_Down);
-        button_AdvancedSettings.setDisabledSelectedIcon(ImgManager.GridAdvancedButton_Down);
-        button_AdvancedSettings.setPressedIcon(ImgManager.GridAdvancedButton_Down);
-        button_AdvancedSettings.setRolloverIcon(ImgManager.GridAdvancedButton_Up);
-        button_AdvancedSettings.setRolloverSelectedIcon(ImgManager.GridAdvancedButton_Up);
-        button_AdvancedSettings.setSelectedIcon(ImgManager.GridAdvancedButton_Up);
-        button_AdvancedSettings.setBounds(button_MoveGridTo.getX() + button_MoveGridTo.getWidth() + 5, Y_START, 30, 30);
-        button_AdvancedSettings.setBorder(BorderFactory.createEmptyBorder());
-        button_AdvancedSettings.setToolTipText("Set grid aspects");
-        this.add(button_AdvancedSettings);
-
-        button_AddGrid = new JButton();
-        button_AddGrid.setIcon(ImgManager.GridAddButton_Up);
-        button_AddGrid.setDisabledIcon(ImgManager.GridAddButton_Down);
-        button_AddGrid.setDisabledSelectedIcon(ImgManager.GridAddButton_Down);
-        button_AddGrid.setPressedIcon(ImgManager.GridAddButton_Down);
-        button_AddGrid.setRolloverIcon(ImgManager.GridAddButton_Up);
-        button_AddGrid.setRolloverSelectedIcon(ImgManager.GridAddButton_Up);
-        button_AddGrid.setSelectedIcon(ImgManager.GridAddButton_Up);
-        button_AddGrid.setBounds(button_AdvancedSettings.getX() + button_AdvancedSettings.getWidth() + 25, Y_START, 30,
-                30);
-        button_AddGrid.setBorder(BorderFactory.createEmptyBorder());
-        button_AddGrid.addActionListener(AddGridButtonAction -> newGridPanelPanel());
-        button_AddGrid.setToolTipText("Add grid");
-        this.add(button_AddGrid);
-
-        button_RemoveGrid = new JButton();
-        button_RemoveGrid.setIcon(ImgManager.GridRemoveButton_Up);
-        button_RemoveGrid.setDisabledIcon(ImgManager.GridRemoveButton_Down);
-        button_RemoveGrid.setDisabledSelectedIcon(ImgManager.GridRemoveButton_Down);
-        button_RemoveGrid.setPressedIcon(ImgManager.GridRemoveButton_Down);
-        button_RemoveGrid.setRolloverIcon(ImgManager.GridRemoveButton_Up);
-        button_RemoveGrid.setRolloverSelectedIcon(ImgManager.GridRemoveButton_Up);
-        button_RemoveGrid.setSelectedIcon(ImgManager.GridRemoveButton_Up);
-        button_RemoveGrid.setBounds(button_AddGrid.getX() + button_AddGrid.getWidth() + 5, Y_START, 30, 30);
-        button_RemoveGrid.setBorder(BorderFactory.createEmptyBorder());
-        button_RemoveGrid.setToolTipText("Remove selected grid");
-        this.add(button_RemoveGrid);
-
-        button_Settings = new JButton();
-        button_Settings.setIcon(ImgManager.GridSettingsButton_Up);
-        button_Settings.setDisabledIcon(ImgManager.GridSettingsButton_Down);
-        button_Settings.setDisabledSelectedIcon(ImgManager.GridSettingsButton_Down);
-        button_Settings.setPressedIcon(ImgManager.GridSettingsButton_Down);
-        button_Settings.setRolloverIcon(ImgManager.GridSettingsButton_Up);
-        button_Settings.setRolloverSelectedIcon(ImgManager.GridSettingsButton_Up);
-        button_Settings.setSelectedIcon(ImgManager.GridSettingsButton_Up);
-        button_Settings.setBounds(button_RemoveGrid.getX() + button_RemoveGrid.getWidth() + 5, Y_START, 30, 30);
-        button_Settings.setBorder(BorderFactory.createEmptyBorder());
-        button_Settings.setToolTipText("Change griding settings");
-        this.add(button_Settings);
-
-        button_SaveGrids = new JButton();
-        button_SaveGrids.setIcon(ImgManager.GridSaveButton_Up);
-        button_SaveGrids.setDisabledIcon(ImgManager.GridSaveButton_Down);
-        button_SaveGrids.setDisabledSelectedIcon(ImgManager.GridSaveButton_Down);
-        button_SaveGrids.setPressedIcon(ImgManager.GridSaveButton_Down);
-        button_SaveGrids.setRolloverIcon(ImgManager.GridSaveButton_Up);
-        button_SaveGrids.setRolloverSelectedIcon(ImgManager.GridSaveButton_Up);
-        button_SaveGrids.setSelectedIcon(ImgManager.GridSaveButton_Up);
-        button_SaveGrids.setBounds(button_Settings.getX() + button_Settings.getWidth() + 25, Y_START, 30, 30);
-        button_SaveGrids.setBorder(BorderFactory.createEmptyBorder());
-        button_SaveGrids.setToolTipText("Save grids to file");
-        this.add(button_SaveGrids);
-
-        button_LoadGrids = new JButton();
-        button_LoadGrids.setIcon(ImgManager.GridLoadButton_Up);
-        button_LoadGrids.setDisabledIcon(ImgManager.GridLoadButton_Down);
-        button_LoadGrids.setDisabledSelectedIcon(ImgManager.GridLoadButton_Down);
-        button_LoadGrids.setPressedIcon(ImgManager.GridLoadButton_Down);
-        button_LoadGrids.setRolloverIcon(ImgManager.GridLoadButton_Up);
-        button_LoadGrids.setRolloverSelectedIcon(ImgManager.GridLoadButton_Up);
-        button_LoadGrids.setSelectedIcon(ImgManager.GridLoadButton_Up);
-        button_LoadGrids.setBounds(button_SaveGrids.getX() + button_SaveGrids.getWidth() + 5, Y_START, 30, 30);
-        button_LoadGrids.setBorder(BorderFactory.createEmptyBorder());
-        button_LoadGrids.setToolTipText("Load grids from file");
-        this.add(button_LoadGrids);
-
-        panel_Grids = new JPanel();
-        scrollPane_Grids = new JScrollPane(panel_Grids);
-        scrollPane_Grids.setBounds(X_START, button_ZoomToGrid.getY() + button_ZoomToGrid.getHeight() + 5, 696, 220);
-        this.add(scrollPane_Grids);
-    }
-
-    public void coordinatesFound(int x, int y)
-    {
-        if (new_gpp != null)
+        MouseAdapter ma = new MouseAdapter()
         {
-            new_gpp.addCoordinates(x, y);
-        }
-    }
+            @Override
+            public void mouseClicked(MouseEvent e)
+            {}
 
-    private void newGridPanelPanel()
-    {
-        setModeNormal();
-        new_gpp = new GridPanelPanel(this, grid_list.size()+1);
-        panel_Grids.removeAll();
-        panel_Grids.add(new_gpp);
-        parent_panel.setGridMode(SharedData.GRIDMODE_SETUP);
-        mode = SharedData.GRIDMODE_SETUP;
-    }
-
-    public void finalizeGridPanelPanel()
-    {
-        if (new_gpp != null)
-        {
-            grid_list.add(new_gpp);
-            new_gpp = null;
-            panel_Grids.removeAll();
-            for (GridPanelPanel gpp: grid_list)
+            @Override
+            public void mousePressed(MouseEvent e)
             {
-                panel_Grids.add(gpp);
+                parent_panel.setSelectedGrid(myNumber-1);
             }
-            parent_panel.setGridMode(SharedData.GRIDMODE_NORMAL);
-            mode = SharedData.GRIDMODE_NORMAL;
-        }
-    }
 
-    public void cancelGridPanelPanel()
-    {
-        new_gpp = null;
-        panel_Grids.removeAll();
-        for (GridPanelPanel gpp: grid_list)
+            @Override
+            public void mouseReleased(MouseEvent e)
+            {}
+
+            @Override
+            public void mouseEntered(MouseEvent e)
+            {}
+
+            @Override
+            public void mouseExited(MouseEvent e)
+            {}
+
+            @Override
+            public void mouseDragged(MouseEvent e)
+            {}
+        };
+
+        this.addMouseListener(ma);
+
+        //Setup Cancel button
+        button_Cancel = new JButton();
+        button_Cancel.setBounds(0, 0, 10, 10);
+        button_Cancel.addActionListener(cancelButton -> {
+            cancelSetting();
+        });
+        button_Cancel.setLocation(this.getWidth()-button_Cancel.getWidth(), this.getHeight() -
+                button_Cancel.getHeight());
+        add(button_Cancel);
+
+        //Setup Name label
+        label_Name = new JLabel("Grid " + myNumber);
+        label_Name.setBounds(0, 0, (int)label_Name.getPreferredSize().getWidth(),
+                (int)label_Name.getPreferredSize().getHeight());
+        label_Name.setLocation(this.getWidth()/2 - label_Name.getWidth()/2, Y_START);
+        label_Name.setVisible(false);
+        add(label_Name);
+
+        //Setup grid dimensions label
+        label_Grid = new JLabel("0x0");
+        label_Grid.setVisible(false);
+        add(label_Grid);
+
+        //Setup Click Top Left label
+        label_ClickTopLeft = new JLabel("Top left");
+        label_ClickTopLeft.setBounds(0, 0, (int)label_ClickTopLeft.getPreferredSize().getWidth(),
+                (int)label_ClickTopLeft.getPreferredSize().getHeight());
+        label_ClickTopLeft.setLocation(this.getWidth()/2 - label_ClickTopLeft.getWidth()/2, Y_START);
+        label_ClickTopLeft.setVisible(false);
+        add(label_ClickTopLeft);
+
+        //Setup Click Top Right label
+        label_ClickTopRight = new JLabel("Top right");
+        label_ClickTopRight.setBounds(0, 0, (int)label_ClickTopRight.getPreferredSize().getWidth(),
+                (int)label_ClickTopRight.getPreferredSize().getHeight());
+        label_ClickTopRight.setLocation(this.getWidth()/2 - label_ClickTopRight.getWidth()/2, Y_START);
+        label_ClickTopRight.setVisible(false);
+        add(label_ClickTopRight);
+
+        //Setup Click Bottom label
+        label_ClickBottom = new JLabel("Bottom");
+        label_ClickBottom.setBounds(0, 0, (int)label_ClickBottom.getPreferredSize().getWidth(),
+                (int)label_ClickBottom.getPreferredSize().getHeight());
+        label_ClickBottom.setLocation(this.getWidth()/2 - label_ClickBottom.getWidth()/2, Y_START);
+        label_ClickBottom.setVisible(false);
+        add(label_ClickBottom);
+
+        //Setup Rows label
+        label_Rows = new JLabel("Rows");
+        label_Rows.setBounds(0, 0, (int)label_Rows.getPreferredSize().getWidth(),
+                (int)label_Rows.getPreferredSize().getHeight());
+        label_Rows.setLocation(this.getWidth()/2 - label_Rows.getWidth()/2, Y_START);
+        label_Rows.setVisible(false);
+        add(label_Rows);
+
+        //Setup Columns label
+        label_Columns = new JLabel("Columns");
+        label_Columns.setBounds(0, 0, (int)label_Columns.getPreferredSize().getWidth(),
+                (int)label_Columns.getPreferredSize().getHeight());
+        label_Columns.setLocation(this.getWidth()/2 - label_Columns.getWidth()/2, Y_START);
+        label_Columns.setVisible(false);
+        add(label_Columns);
+
+        //Setup Rows text field
+        textField_Rows = new JTextField();
+        textField_Rows.setColumns(4);
+        textField_Rows.setBounds(this.getWidth()/2 - (int)textField_Rows.getPreferredSize().getWidth()/2,
+                label_Rows.getY() + label_Rows.getHeight() + 5, (int)textField_Rows.getPreferredSize().getWidth(),
+                (int)textField_Rows.getPreferredSize().getHeight());
+        textField_Rows.setVisible(false);
+        add(textField_Rows);
+
+        //Setup Columns text field
+        textField_Columns = new JTextField();
+        textField_Columns.setColumns(4);
+        textField_Columns.setBounds(this.getWidth()/2 - (int)textField_Columns.getPreferredSize().getWidth()/2,
+                label_Columns.getY() + label_Columns.getHeight() + 5,
+                (int)textField_Columns.getPreferredSize().getWidth(),
+                (int)textField_Columns.getPreferredSize().getHeight());
+        textField_Columns.setVisible(false);
+        add(textField_Columns);
+
+        textField_Rows.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "rowInput");
+        textField_Rows.getActionMap().put("rowInput", new AbstractAction()
         {
-            panel_Grids.add(gpp);
-        }
-        this.repaint();
-    }
+            private static final long serialVersionUID = 1L;
 
-    public void addGrid(int tlX, int tlY, int trX, int trY, int bX, int bY, int rows, int columns)
-    {
-        parent_panel.addGrid(tlX, tlY, trX, trY, bX, bY, rows, columns);
-    }
-
-    private int mode = SharedData.GRIDMODE_NORMAL;
-    private void this_MoveGridToButtonAction()
-    {
-        if (mode != SharedData.GRIDMODE_SETUP)
-        {
-            if (mode == SharedData.GRIDMODE_MOVETO)
+            @Override
+            public void actionPerformed(ActionEvent e)
             {
-                setModeNormal();
-            }
-            else
-            {
-                if (mode != SharedData.GRIDMODE_NORMAL)
+                try
                 {
-                    setModeNormal();
+                    rows_temp = Integer.parseInt(textField_Rows.getText());
+                    progressMode();
                 }
-                button_MoveGridTo.setIcon(ImgManager.GridMoveToButton_Down);
-                button_MoveGridTo.setDisabledIcon(ImgManager.GridMoveToButton_Up);
-                button_MoveGridTo.setDisabledSelectedIcon(ImgManager.GridMoveToButton_Up);
-                button_MoveGridTo.setPressedIcon(ImgManager.GridMoveToButton_Up);
-                button_MoveGridTo.setRolloverIcon(ImgManager.GridMoveToButton_Down);
-                button_MoveGridTo.setRolloverSelectedIcon(ImgManager.GridMoveToButton_Down);
-                button_MoveGridTo.setSelectedIcon(ImgManager.GridMoveToButton_Down);
-                parent_panel.setGridMode(SharedData.GRIDMODE_MOVETO);
-                mode = SharedData.GRIDMODE_MOVETO;
-            }
-        }
-    }
-
-    private void this_MoveGridButtonAction()
-    {
-        if (mode != SharedData.GRIDMODE_SETUP)
-        {
-            if (mode == SharedData.GRIDMODE_MOVE)
-            {
-                setModeNormal();
-            }
-            else
-            {
-                if (mode != SharedData.GRIDMODE_NORMAL)
+                catch(Exception ex)
                 {
-                    setModeNormal();
+                    textField_Rows.setText("");
                 }
-                button_MoveGrid.setIcon(ImgManager.GridMoveButton_Down);
-                button_MoveGrid.setDisabledIcon(ImgManager.GridMoveButton_Up);
-                button_MoveGrid.setDisabledSelectedIcon(ImgManager.GridMoveButton_Up);
-                button_MoveGrid.setPressedIcon(ImgManager.GridMoveButton_Up);
-                button_MoveGrid.setRolloverIcon(ImgManager.GridMoveButton_Down);
-                button_MoveGrid.setRolloverSelectedIcon(ImgManager.GridMoveButton_Down);
-                button_MoveGrid.setSelectedIcon(ImgManager.GridMoveButton_Down);
-                parent_panel.setGridMode(SharedData.GRIDMODE_MOVE);
-                mode = SharedData.GRIDMODE_MOVE;
             }
-        }
-    }
-
-    private void this_RotateGridButtonAction()
-    {
-        if (mode != SharedData.GRIDMODE_SETUP)
+        });
+        textField_Columns.getInputMap().put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "columnInput");
+        textField_Columns.getActionMap().put("columnInput", new AbstractAction()
         {
-            if (mode == SharedData.GRIDMODE_ROTATE)
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            public void actionPerformed(ActionEvent e)
             {
-                setModeNormal();
-            }
-            else
-            {
-                if (mode != SharedData.GRIDMODE_ROTATE)
+                try
                 {
-                    setModeNormal();
+                    columns_temp = Integer.parseInt(textField_Columns.getText());
+                    progressMode();
                 }
-                button_RotateGrid.setIcon(ImgManager.GridRotateButton_Down);
-                button_RotateGrid.setDisabledIcon(ImgManager.GridRotateButton_Up);
-                button_RotateGrid.setDisabledSelectedIcon(ImgManager.GridRotateButton_Up);
-                button_RotateGrid.setPressedIcon(ImgManager.GridRotateButton_Up);
-                button_RotateGrid.setRolloverIcon(ImgManager.GridRotateButton_Down);
-                button_RotateGrid.setRolloverSelectedIcon(ImgManager.GridRotateButton_Down);
-                button_RotateGrid.setSelectedIcon(ImgManager.GridRotateButton_Down);
-                parent_panel.setGridMode(SharedData.GRIDMODE_ROTATE);
-                mode = SharedData.GRIDMODE_ROTATE;
+                catch (Exception ex)
+                {
+                    textField_Columns.setText("");
+                }
             }
+        });
+
+        progressMode();
+
+        this.setVisible(true);
+    }
+
+    /**
+     * Adds the coordinate data to the grid. Does nothing if the grid is not waiting for coordinate data.
+     * @param x The x coordinate
+     * @param y The y coordinate
+     */
+    public void addCoordinates(int x, int y)
+    {
+        switch (mode) {
+        case 1:
+            topLeftX_temp = x;
+            topLeftY_temp = y;
+            progressMode();
+            break;
+        case 2:
+            topRightX_temp = x;
+            topRightY_temp = y;
+            progressMode();
+            break;
+        case 3:
+            bottomX_temp = x;
+            bottomY_temp = y;
+            progressMode();
+            break;
+        default:
+            break;
         }
     }
 
-    private void this_ResizeGridButtonAction()
+    /**
+     * Progresses the mode of the GridPanel by changing various components.
+     */
+    private void progressMode()
     {
-        if (mode != SharedData.GRIDMODE_SETUP)
-        {
-            if (mode == SharedData.GRIDMODE_RESIZE)
-            {
-                setModeNormal();
-            }
-            else
-            {
-                if (mode != SharedData.GRIDMODE_RESIZE)
-                {
-                    setModeNormal();
-                }
-                button_ResizeGrid.setIcon(ImgManager.GridResizeButton_Down);
-                button_ResizeGrid.setDisabledIcon(ImgManager.GridResizeButton_Up);
-                button_ResizeGrid.setDisabledSelectedIcon(ImgManager.GridResizeButton_Up);
-                button_ResizeGrid.setPressedIcon(ImgManager.GridResizeButton_Up);
-                button_ResizeGrid.setRolloverIcon(ImgManager.GridResizeButton_Down);
-                button_ResizeGrid.setRolloverSelectedIcon(ImgManager.GridResizeButton_Down);
-                button_ResizeGrid.setSelectedIcon(ImgManager.GridResizeButton_Down);
-                parent_panel.setGridMode(SharedData.GRIDMODE_RESIZE);
-                mode = SharedData.GRIDMODE_RESIZE;
-            }
-        }
-    }
+        mode++;
 
-    private void setModeNormal()
-    {
-        //TODO: Set all buttons to narmal mode
         switch (mode)
         {
-            case SharedData.GRIDMODE_MOVETO:
-                button_MoveGridTo.setIcon(ImgManager.GridMoveToButton_Up);
-                button_MoveGridTo.setDisabledIcon(ImgManager.GridMoveToButton_Down);
-                button_MoveGridTo.setDisabledSelectedIcon(ImgManager.GridMoveToButton_Down);
-                button_MoveGridTo.setPressedIcon(ImgManager.GridMoveToButton_Down);
-                button_MoveGridTo.setRolloverIcon(ImgManager.GridMoveToButton_Up);
-                button_MoveGridTo.setRolloverSelectedIcon(ImgManager.GridMoveToButton_Up);
-                button_MoveGridTo.setSelectedIcon(ImgManager.GridMoveToButton_Up);
+            case 1:
+                label_ClickTopLeft.setVisible(true);
+                awaitingData = true;
                 break;
-            case SharedData.GRIDMODE_MOVE:
-                button_MoveGrid.setIcon(ImgManager.GridMoveButton_Up);
-                button_MoveGrid.setDisabledIcon(ImgManager.GridMoveButton_Down);
-                button_MoveGrid.setDisabledSelectedIcon(ImgManager.GridMoveButton_Down);
-                button_MoveGrid.setPressedIcon(ImgManager.GridMoveButton_Down);
-                button_MoveGrid.setRolloverIcon(ImgManager.GridMoveButton_Up);
-                button_MoveGrid.setRolloverSelectedIcon(ImgManager.GridMoveButton_Up);
-                button_MoveGrid.setSelectedIcon(ImgManager.GridMoveButton_Up);
+            case 2:
+                label_ClickTopLeft.setVisible(false);
+                label_ClickTopRight.setVisible(true);
                 break;
-            case SharedData.GRIDMODE_ROTATE:
-                button_RotateGrid.setIcon(ImgManager.GridRotateButton_Up);
-                button_RotateGrid.setDisabledIcon(ImgManager.GridRotateButton_Down);
-                button_RotateGrid.setDisabledSelectedIcon(ImgManager.GridRotateButton_Down);
-                button_RotateGrid.setPressedIcon(ImgManager.GridRotateButton_Down);
-                button_RotateGrid.setRolloverIcon(ImgManager.GridRotateButton_Up);
-                button_RotateGrid.setRolloverSelectedIcon(ImgManager.GridRotateButton_Up);
-                button_RotateGrid.setSelectedIcon(ImgManager.GridRotateButton_Up);
+            case 3:
+                label_ClickTopRight.setVisible(false);
+                label_ClickBottom.setVisible(true);
                 break;
-            case SharedData.GRIDMODE_RESIZE:
-                button_ResizeGrid.setIcon(ImgManager.GridResizeButton_Up);
-                button_ResizeGrid.setDisabledIcon(ImgManager.GridResizeButton_Down);
-                button_ResizeGrid.setDisabledSelectedIcon(ImgManager.GridResizeButton_Down);
-                button_ResizeGrid.setPressedIcon(ImgManager.GridResizeButton_Down);
-                button_ResizeGrid.setRolloverIcon(ImgManager.GridResizeButton_Up);
-                button_ResizeGrid.setRolloverSelectedIcon(ImgManager.GridResizeButton_Up);
-                button_ResizeGrid.setSelectedIcon(ImgManager.GridResizeButton_Up);
+            case 4:
+                label_ClickBottom.setVisible(false);
+                label_Rows.setVisible(true);
+                textField_Rows.setVisible(true);
+                textField_Rows.requestFocus();
+                break;
+            case 5:
+                label_Rows.setVisible(false);
+                textField_Rows.setVisible(false);
+                label_Columns.setVisible(true);
+                textField_Columns.setVisible(true);
+                textField_Columns.requestFocus();
+                break;
+            case 6:
+                label_Columns.setVisible(false);
+                textField_Columns.setVisible(false);
+                label_Name.setVisible(true);
+                label_Grid.setText(rows_temp + "x" + columns_temp);
+                label_Grid.setBounds(this.getWidth()/2 - (int)label_Grid.getPreferredSize().getWidth()/2, label_Name.getY()
+                                + label_Name.getHeight(), (int)label_Grid.getPreferredSize().getWidth(),
+                        (int)label_Grid.getPreferredSize().getHeight());
+                label_Grid.setVisible(true);
+
+                remove(label_ClickTopLeft);
+                label_ClickTopLeft = null;
+                remove(label_ClickTopRight);
+                label_ClickTopRight = null;
+                remove(label_ClickBottom);
+                label_ClickBottom = null;
+                remove(label_Rows);
+                label_Rows = null;
+                remove(label_Columns);
+                label_Columns = null;
+                remove(textField_Columns);
+                textField_Columns = null;
+                remove(textField_Rows);
+                textField_Rows = null;
+                remove(button_Cancel);
+                button_Cancel = null;
+
+                parent_panel.finalizeGrid();
+                awaitingData = false;
+                commitValues();
+                parent_panel.setSelectedGrid(myNumber-1);
+                break;
+            case 7:
+            case 8:
+                mode = 7;
                 break;
             default:
+                mode = 0;
+                progressMode();
                 break;
         }
-        parent_panel.setGridMode(SharedData.GRIDMODE_NORMAL);
-        mode = SharedData.GRIDMODE_NORMAL;
+        updateUI();
+        parent_panel.updateUI();
     }
 
-    private void this_ZoomToGridButtonAction()
+    /**
+     * Cancel setting up the grid.
+     */
+    private void cancelSetting()
     {
-        parent_panel.zoomToGrid();
+        parent_panel.cancelGrid();
     }
 
-    public void setSelectedGrid(int grid)
+    /*
+    private void openPopup()
     {
-        parent_panel.setSelectedGrid(grid);
-        for (int i = 0; i < grid_list.size(); i++)
+        GridAdvancedDialog god = new GridAdvancedDialog(parent_panel.getFrame());
+        god.setOptions(topLeftX_true, topLeftY_true, topRightX_true, topRightY_true, bottomX_true, bottomY_true,
+                columns_true, rows_true);
+        god.setModal(true);
+        god.pack();
+        god.setVisible(true);
+        if (god.getOK())
         {
-            if (i == grid)
-            {
-                grid_list.get(i).setSelected(true);
-            }
-            else
-            {
-                grid_list.get(i).setSelected(false);
-            }
+            topLeftX_temp = god.tlX;
+            topLeftY_temp = god.tlY;
+            topRightX_temp = god.trX;
+            topRightY_temp = god.trY;
+            bottomX_temp = god.bX;
+            bottomY_temp = god.bY;
+            columns_temp = god.columns;
+            rows_temp = god.rows;
+            commitValues();
         }
+    }
+    */
+
+    /**
+     * Commit the values obtained into making a new grid.
+     */
+    private void commitValues()
+    {
+        int topLeftX;
+        int topLeftY;
+        int topRightX;
+        int topRightY;
+        if (topLeftX_temp < topRightX_temp)
+        {
+            topLeftX = topLeftX_temp;
+            topLeftY = topLeftY_temp;
+            topRightX = topRightX_temp;
+            topRightY = topRightY_temp;
+        }
+        else
+        {
+            topRightX = topLeftX_temp;
+            topRightY = topLeftY_temp;
+            topLeftX = topRightX_temp;
+            topLeftY = topRightY_temp;
+        }
+
+        int rows = rows_temp;
+        int columns = columns_temp;
+
+        parent_panel.addGrid(topLeftX, topLeftY, topRightX, topRightY, bottomX_temp, bottomY_temp, rows, columns);
+    }
+
+    /**
+     * Specifies whether this grid is selected. Changes the border accordingly.
+     */
+    public void setSelected(boolean selected)
+    {
+        if (selected)
+        {
+            this.setBorder(border_Yellowline);
+        }
+        else
+        {
+            this.setBorder(border_Blackline);
+        }
+    }
+
+    /**
+     * Returns the number assigned to this GridPanel
+     * @return The number of this GridPanel
+     */
+    public int getNumber()
+    {
+        return myNumber;
+    }
+
+    /**
+     * Sets the number of this GridPanel
+     * @param num the new number of this GridPanel
+     */
+    public void setNumber(int num)
+    {
+        myNumber = num;
+        label_Name.setText("Grid " + myNumber);
     }
 }

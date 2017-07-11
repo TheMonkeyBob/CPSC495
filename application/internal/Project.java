@@ -13,6 +13,9 @@ public class Project
     private ArrayList<Sample> sample_list;
     private ArrayList<GridProfile> grid_profiles;
 
+    private String path;
+    private String name;
+
     /**
      * Creates new project with default settings.
      */
@@ -22,6 +25,25 @@ public class Project
         grid_profiles = new ArrayList<GridProfile>();
     }
 
+    public void setPath(String path)
+    {
+        this.path = path;
+    }
+
+    public void setName(String name)
+    {
+        this.name = name;
+    }
+
+    public String getPath()
+    {
+        return path;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Grid Profile Functions
@@ -134,7 +156,27 @@ public class Project
         sample_list.add(new Sample());
     }
 
+    public void addSample(String path, String name, ImagePlus green, ImagePlus red)
+    {
+        sample_list.add(new Sample(path, name, green, red));
+    }
+
     public void addSample(String greenPath, String redPath) { sample_list.add(new Sample(greenPath, redPath)); }
+
+    public int getSampleCount()
+    {
+        return sample_list.size();
+    }
+
+    public String getSample_Name(int sample)
+    {
+        return sample_list.get(sample).getName();
+    }
+
+    public String getSample_FilePath(int sample)
+    {
+        return sample_list.get(sample).getFilePath();
+    }
 
     public Sample getSample(int sample)
     {
@@ -254,6 +296,21 @@ public class Project
     public double getSample_Grid_Angle(int sample, int grid)
     {
         return sample_list.get(sample).getGrid_Angle(grid);
+    }
+
+    public int[] getSample_Grid_MasterPoints(int sample, int grid)
+    {
+        return sample_list.get(sample).getGrid_MasterPoints(grid);
+    }
+
+    public int[] getSample_Grid_RowsAndColumns(int sample, int grid)
+    {
+        return sample_list.get(sample).getGrid_RowsAndColumns(grid);
+    }
+
+    public void removeSample_Grid_All(int sample)
+    {
+        sample_list.get(sample).removeGrid_All();
     }
 
     /**

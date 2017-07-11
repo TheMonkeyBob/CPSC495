@@ -1,7 +1,7 @@
 package application.gui;
 
 import application.GeneImageAspect;
-import application.internal.Engine;
+import application.engine.GuiManager;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -19,10 +19,9 @@ public class SegmentPanel extends JPanel
     private Border blackline = BorderFactory.createLineBorder(Color.black);
     private final int X_START = 10;
     private final int Y_START = 20;
-    private Engine engine;
     private int myNumber;
 
-    private JFrame main;
+    private GuiManager manager;
 
     private ButtonGroup buttonGroup_Segment;
     private ButtonGroup buttonGroup_Control;
@@ -65,12 +64,11 @@ public class SegmentPanel extends JPanel
     private SegmentDisplay display_Red;
     private int segmentation_method = GeneImageAspect.FIXED_CIRCLE;
 
-    public SegmentPanel(JFrame main, int number, Engine engine)
+    public SegmentPanel(int number, GuiManager manager)
     {
         super();
-        this.main = main;
+        this.manager = manager;
         myNumber = number;
-        this.engine = engine;
         setup();
     }
 
@@ -91,7 +89,7 @@ public class SegmentPanel extends JPanel
         label_GreenDisplay.setBounds(0, 0, 40, 10);
         panel_Green.add(label_GreenDisplay);
         display_Green = null;
-        //display_Green = new SegmentDisplay(myNumber, true, engine);
+        //display_Green = new SegmentDisplay(myNumber, true, manager);
         //display_Green.setBounds(-10, -50, 200, 200);
         //scrollPane_GreenDisplay = new JScrollPane(display_Green);
         scrollPane_GreenDisplay = new JScrollPane();
@@ -113,7 +111,7 @@ public class SegmentPanel extends JPanel
         label_RedDisplay.setBounds(0, 0, 40, 10);
         panel_Red.add(label_RedDisplay);
         display_Red = null;
-        //display_Red = new SegmentDisplay(myNumber, false, engine);
+        //display_Red = new SegmentDisplay(myNumber, false, manager);
         //display_Red.setBounds(-10, -50, 200, 200);
         //scrollPane_GreenDisplay = new JScrollPane(display_Red);
         scrollPane_RedDisplay = new JScrollPane();
@@ -157,7 +155,7 @@ public class SegmentPanel extends JPanel
         radioButton_Fixed.setSelected(true);
         radioButton_Fixed.addActionListener(FixedRadioButtonAction ->
         {
-            engine.setSample_SegmentationMethod(myNumber, GeneImageAspect.FIXED_CIRCLE);
+            manager.setSample_SegmentationMethod(myNumber, GeneImageAspect.FIXED_CIRCLE);
             segmentation_method = GeneImageAspect.FIXED_CIRCLE;
             updateSegmentation();
         });
@@ -178,7 +176,7 @@ public class SegmentPanel extends JPanel
         radioButton_Adaptive.setToolTipText("Adaptive Circle");
         radioButton_Adaptive.addActionListener(AdaptiveRadioButtonAction ->
         {
-            engine.setSample_SegmentationMethod(myNumber, GeneImageAspect.ADAPTIVE_CIRCLE);
+            manager.setSample_SegmentationMethod(myNumber, GeneImageAspect.ADAPTIVE_CIRCLE);
             segmentation_method = GeneImageAspect.ADAPTIVE_CIRCLE;
             updateSegmentation();
         });
@@ -199,7 +197,7 @@ public class SegmentPanel extends JPanel
         radioButton_Seeded.setToolTipText("Seeded Region");
         radioButton_Seeded.addActionListener(SeededRadioButtonAction ->
         {
-            engine.setSample_SegmentationMethod(myNumber, GeneImageAspect.SEEDED_REGION);
+            manager.setSample_SegmentationMethod(myNumber, GeneImageAspect.SEEDED_REGION);
             segmentation_method = GeneImageAspect.SEEDED_REGION;
             updateSegmentation();
         });
@@ -251,7 +249,7 @@ public class SegmentPanel extends JPanel
         slider_Thresh.addChangeListener(ThreshSliderChange ->
         {
             label_Thresh.setText(slider_Thresh.getValue() + "%");
-            engine.setSample_MethodThreshold(myNumber, slider_Thresh.getValue());
+            manager.setSample_MethodThreshold(myNumber, slider_Thresh.getValue());
         });
         panel_Settings.add(slider_Thresh);
         button_ThreshPlus = new JButton();
@@ -294,7 +292,7 @@ public class SegmentPanel extends JPanel
         button_GridLeft.setBorder(BorderFactory.createEmptyBorder());
         button_GridLeft.addActionListener(GridLeftButtonAction ->
         {
-            if (engine.getSample_GridCount(myNumber) > 0)
+            if (manager.getSample_GridCount(myNumber) > 0)
             {
                 if ((int)textField_GridNum.getValue() > 1)
                 {
@@ -320,31 +318,31 @@ public class SegmentPanel extends JPanel
             }
 
             public void updateNumber() {
-                if (engine.getSample_GridCount(myNumber) > 0)
+                if (manager.getSample_GridCount(myNumber) > 0)
                 {
                     if ((int)textField_GridNum.getValue() < 1)
                     {
                         textField_GridNum.setValue(1);
                     }
-                    else if ((int)textField_GridNum.getValue() > engine.getSample_GridCount(myNumber))
+                    else if ((int)textField_GridNum.getValue() > manager.getSample_GridCount(myNumber))
                     {
-                        textField_GridNum.setValue(engine.getSample_GridCount(myNumber));
+                        textField_GridNum.setValue(manager.getSample_GridCount(myNumber));
                     }
                 }
                 else if ((int)textField_GridNum.getValue() != 0)
                 {
                     textField_GridNum.setValue(0);
                 }
-                if (engine.getSample_GridCount(myNumber) > 0)
+                if (manager.getSample_GridCount(myNumber) > 0)
                 {
                     if ((int)textField_SpotNum.getValue() < 1)
                     {
                         textField_SpotNum.setValue(1);
                     }
-                    else if ((int)textField_SpotNum.getValue() > engine.getSample_Grid_NumberOfSpots(myNumber,
+                    else if ((int)textField_SpotNum.getValue() > manager.getSample_Grid_NumberOfSpots(myNumber,
                             (int)textField_GridNum.getValue() - 1))
                     {
-                        textField_SpotNum.setValue(engine.getSample_Grid_NumberOfSpots(myNumber,
+                        textField_SpotNum.setValue(manager.getSample_Grid_NumberOfSpots(myNumber,
                                 (int)textField_GridNum.getValue() - 1));
                     }
                 }
@@ -370,9 +368,9 @@ public class SegmentPanel extends JPanel
         button_GridRight.setBorder(BorderFactory.createEmptyBorder());
         button_GridRight.addActionListener(GridRightButtonAction ->
         {
-            if (engine.getSample_GridCount(myNumber) > 0)
+            if (manager.getSample_GridCount(myNumber) > 0)
             {
-                if ((int)textField_GridNum.getValue() < engine.getSample_GridCount(myNumber))
+                if ((int)textField_GridNum.getValue() < manager.getSample_GridCount(myNumber))
                 {
                     textField_GridNum.setValue((int)textField_GridNum.getValue() + 1);
                 }
@@ -395,7 +393,7 @@ public class SegmentPanel extends JPanel
         button_SpotLeft.setBorder(BorderFactory.createEmptyBorder());
         button_SpotLeft.addActionListener(SpotLeftButtonAction ->
         {
-            if (engine.getSample_GridCount(myNumber) > 0)
+            if (manager.getSample_GridCount(myNumber) > 0)
             {
                 if ((int)textField_SpotNum.getValue() > 1)
                 {
@@ -425,9 +423,9 @@ public class SegmentPanel extends JPanel
         button_SpotRight.setBorder(BorderFactory.createEmptyBorder());
         button_SpotRight.addActionListener(SpotRightButtonAction ->
         {
-            if (engine.getSample_GridCount(myNumber) > 0)
+            if (manager.getSample_GridCount(myNumber) > 0)
             {
-                if ((int)textField_SpotNum.getValue() < engine.getSample_Grid_NumberOfSpots(myNumber,
+                if ((int)textField_SpotNum.getValue() < manager.getSample_Grid_NumberOfSpots(myNumber,
                         (int)textField_GridNum.getValue() - 1))
                 {
                     textField_SpotNum.setValue((int)textField_SpotNum.getValue() + 1);
@@ -495,7 +493,7 @@ public class SegmentPanel extends JPanel
         button_FlagSettings.setBorder(BorderFactory.createEmptyBorder());
         button_FlagSettings.addActionListener(FlagSettingsAction ->
         {
-            AutoFlaggingOptionsDialog afod = new AutoFlaggingOptionsDialog(main);
+            AutoFlaggingOptionsDialog afod = new AutoFlaggingOptionsDialog(manager.getWindow());
             afod.setVisible(true);
         });
         panel_Settings.add(button_FlagSettings);
@@ -512,19 +510,19 @@ public class SegmentPanel extends JPanel
                 switch (comboBox_Expression.getSelectedIndex())
                 {
                     case 0:
-                        engine.setSample_RatioMethod(myNumber, GeneImageAspect.TOTAL_SIGNAL);
+                        manager.setSample_RatioMethod(myNumber, GeneImageAspect.TOTAL_SIGNAL);
                         ratioMethod = GeneImageAspect.TOTAL_SIGNAL;
                         break;
                     case 1:
-                        engine.setSample_RatioMethod(myNumber, GeneImageAspect.AVG_SIGNAL);
+                        manager.setSample_RatioMethod(myNumber, GeneImageAspect.AVG_SIGNAL);
                         ratioMethod = GeneImageAspect.AVG_SIGNAL;
                         break;
                     case 2:
-                        engine.setSample_RatioMethod(myNumber, GeneImageAspect.TOTAL_SUBTRACT_BG);
+                        manager.setSample_RatioMethod(myNumber, GeneImageAspect.TOTAL_SUBTRACT_BG);
                         ratioMethod = GeneImageAspect.TOTAL_SUBTRACT_BG;
                         break;
                     case 3:
-                        engine.setSample_RatioMethod(myNumber, GeneImageAspect.AVG_SUBTRACT_BG);
+                        manager.setSample_RatioMethod(myNumber, GeneImageAspect.AVG_SUBTRACT_BG);
                         ratioMethod = GeneImageAspect.AVG_SUBTRACT_BG;
                         break;
                 }
@@ -541,19 +539,19 @@ public class SegmentPanel extends JPanel
 
     public void updateSegmentation()
     {
-        if (engine.getSample_GridCount(myNumber) < 1 && display_Green != null)
+        if (manager.getSample_GridCount(myNumber) < 1 && display_Green != null)
         {
             panel_Green.removeAll();
             panel_Red.removeAll();
             display_Green = null;
             display_Red = null;
         }
-        else if (engine.getSample_GridCount(myNumber) >= 1 && display_Green == null)
+        else if (manager.getSample_GridCount(myNumber) >= 1 && display_Green == null)
         {
-            display_Green = new SegmentDisplay(myNumber, true, engine);
+            display_Green = new SegmentDisplay(myNumber, true, manager);
             display_Green.setBounds(-10, -50, 200, 200);
             scrollPane_GreenDisplay.setViewportView(display_Green);
-            display_Red = new SegmentDisplay(myNumber, false, engine);
+            display_Red = new SegmentDisplay(myNumber, false, manager);
             display_Red.setBounds(-10, -50, 200, 200);
             scrollPane_RedDisplay.setViewportView(display_Red);
             display_Green.zoom(10);
@@ -565,14 +563,14 @@ public class SegmentPanel extends JPanel
             setSpot(0, 0);
             updateSegmentation();
         }
-        else if (engine.getSample_GridCount(myNumber) >= 1 && display_Green != null)
+        else if (manager.getSample_GridCount(myNumber) >= 1 && display_Green != null)
         {
             setSpot((int)textField_GridNum.getValue() - 1, (int)textField_SpotNum.getValue() - 1);
             if (segmentation_method == GeneImageAspect.FIXED_CIRCLE)
             {
                 Object[] params = new Object[1];
                 params[0] = 5;
-                engine.setSample_Gene_Data(myNumber, display_Red.getCellPixels(),display_Green.getCellPixels(),
+                manager.setSample_Gene_Data(myNumber, display_Red.getCellPixels(),display_Green.getCellPixels(),
                         display_Red.getCellHeight(), display_Red.getCellWidth(), 1, params);
                 display_Green.setFixedCircle(5);
                 display_Red.setFixedCircle(5);
@@ -583,35 +581,35 @@ public class SegmentPanel extends JPanel
                 params[0] = 3;
                 params[1] = 8;
                 params[2] = slider_Thresh.getValue();
-                engine.setSample_Gene_Data(myNumber, display_Red.getCellPixels(),display_Green.getCellPixels(),
+                manager.setSample_Gene_Data(myNumber, display_Red.getCellPixels(),display_Green.getCellPixels(),
                         display_Red.getCellHeight(), display_Red.getCellWidth(), 2, params);
-                display_Green.setAdaptiveCircle(engine.getSample_Gene_CenterAndRadius(myNumber));
-                display_Red.setAdaptiveCircle(engine.getSample_Gene_CenterAndRadius(myNumber));
+                display_Green.setAdaptiveCircle(manager.getSample_Gene_CenterAndRadius(myNumber));
+                display_Red.setAdaptiveCircle(manager.getSample_Gene_CenterAndRadius(myNumber));
             }
             else if (segmentation_method == GeneImageAspect.SEEDED_REGION)
             {
                 Object[] params = new Object[1];
                 params[0] = slider_Thresh.getValue();
-                engine.setSample_Gene_Data(myNumber, display_Red.getCellPixels(),display_Green.getCellPixels(),
+                manager.setSample_Gene_Data(myNumber, display_Red.getCellPixels(),display_Green.getCellPixels(),
                         display_Red.getCellHeight(), display_Red.getCellWidth(), 1, params);
-                display_Green.setSeededRegion(engine.getSample_Gene_CenterSpots(myNumber, true));
-                display_Red.setSeededRegion(engine.getSample_Gene_CenterSpots(myNumber, false));
+                display_Green.setSeededRegion(manager.getSample_Gene_CenterSpots(myNumber, true));
+                display_Red.setSeededRegion(manager.getSample_Gene_CenterSpots(myNumber, false));
             }
             if(ratioMethod==GeneImageAspect.TOTAL_SIGNAL||ratioMethod==GeneImageAspect.TOTAL_SUBTRACT_BG)
             {
-                textArea_GreenDisplay.setText("BG Total: " + df.format(engine.getSample_Gene_GreenBackgroundTotal(myNumber)) +
-                        "\nFG Total: " +  df.format(engine.getSample_Gene_GreenForegroundTotal(myNumber)));
-                textArea_RedDisplay.setText("BG Total: " + df.format(engine.getSample_Gene_RedBackgroundTotal(myNumber)) +
-                        "\nFG Total: " + df.format(engine.getSample_Gene_RedForegroundTotal(myNumber)));
+                textArea_GreenDisplay.setText("BG Total: " + df.format(manager.getSample_Gene_GreenBackgroundTotal(myNumber)) +
+                        "\nFG Total: " +  df.format(manager.getSample_Gene_GreenForegroundTotal(myNumber)));
+                textArea_RedDisplay.setText("BG Total: " + df.format(manager.getSample_Gene_RedBackgroundTotal(myNumber)) +
+                        "\nFG Total: " + df.format(manager.getSample_Gene_RedForegroundTotal(myNumber)));
             }
             else
             {
-                textArea_GreenDisplay.setText("BG Average: " + df.format(engine.getSample_Gene_GreenBackgroundAvg(myNumber)) +
-                        "\nFG Average: " + df.format(engine.getSample_Gene_GreenForegroundAvg(myNumber)));
-                textArea_RedDisplay.setText("BG Average: " + df.format(engine.getSample_Gene_RedBackgroundAvg(myNumber)) +
-                        "\nFG Average: " + df.format(engine.getSample_Gene_RedForegroundAvg(myNumber)));
+                textArea_GreenDisplay.setText("BG Average: " + df.format(manager.getSample_Gene_GreenBackgroundAvg(myNumber)) +
+                        "\nFG Average: " + df.format(manager.getSample_Gene_GreenForegroundAvg(myNumber)));
+                textArea_RedDisplay.setText("BG Average: " + df.format(manager.getSample_Gene_RedBackgroundAvg(myNumber)) +
+                        "\nFG Average: " + df.format(manager.getSample_Gene_RedForegroundAvg(myNumber)));
             }
-            textArea_OtherData.setText("Ratio: " + df.format(engine.getSample_Gene_Ratio(myNumber, ratioMethod)));
+            textArea_OtherData.setText("Ratio: " + df.format(manager.getSample_Gene_Ratio(myNumber, ratioMethod)));
         }
     }
 
@@ -620,13 +618,13 @@ public class SegmentPanel extends JPanel
     int gridNum;
     int spotNum;
     public void setSpot(int grid, int spot) {
-        if (grid >= 0 && grid < engine.getSample_GridCount(myNumber) && spot >= 0
-                && spot < engine.getSample_Grid_NumberOfSpots(myNumber, grid))
+        if (grid >= 0 && grid < manager.getSample_GridCount(myNumber) && spot >= 0
+                && spot < manager.getSample_Grid_NumberOfSpots(myNumber, grid))
         {
             gridNum = grid;
             spotNum = spot;
-            engine.setSample_CurrentGrid(myNumber, grid);
-            engine.setSample_CurrentSpot(myNumber, engine.getSample_Grid_ActualSpotNum(myNumber, grid, spot));
+            manager.setSample_CurrentGrid(myNumber, grid);
+            manager.setSample_CurrentSpot(myNumber, manager.getSample_Grid_ActualSpotNum(myNumber, grid, spot));
             showCurrentCell();
         }
     }
@@ -649,7 +647,7 @@ public class SegmentPanel extends JPanel
     int cellHeight;
     public void setCurrentCell()
     {
-        Polygon p = engine.getSample_Grid_Polygon_Outline(myNumber, engine.getSample_CurrentGridNum(myNumber));
+        Polygon p = manager.getSample_Grid_Polygon_Outline(myNumber, manager.getSample_CurrentGridNum(myNumber));
         Polygon q = new Polygon();
         if (p != null)
         {
@@ -658,8 +656,8 @@ public class SegmentPanel extends JPanel
                 q.xpoints[j] = (int) ((display_Green.screenX(p.xpoints[j])) / display_Green.getZoom());
                 q.ypoints[j] = (int) ((display_Green.screenX(p.ypoints[j])) / display_Green.getZoom());
             }
-            engine.setSample_Grid_Spots(myNumber, engine.getSample_CurrentGridNum(myNumber), q);
-            cell = engine.getSample_Grid_CurrentSpot(myNumber, engine.getSample_CurrentGridNum(myNumber));
+            manager.setSample_Grid_Spots(myNumber, manager.getSample_CurrentGridNum(myNumber), q);
+            cell = manager.getSample_Grid_CurrentSpot(myNumber, manager.getSample_CurrentGridNum(myNumber));
         }
         cellHeight = cell.ypoints[3] - cell.ypoints[0];
     }
@@ -687,8 +685,8 @@ public class SegmentPanel extends JPanel
         lblNewLabel_1.setBounds(10, 20, 300, 14);
         segment.add(lblNewLabel_1);
 
-        ipGrn = engine.getSample_GreenImagePlus(myNumber);
-        ipRed = engine.getSample_RedImagePlus(myNumber);
+        ipGrn = manager.getSample_GreenImagePlus(myNumber);
+        ipRed = manager.getSample_RedImagePlus(myNumber);
 
         JRadioButton rdbtnNewRadioButton = new JRadioButton("Adaptive Circle");
         rdbtnNewRadioButton.setBounds(310, 16, 110, 23);
@@ -696,7 +694,7 @@ public class SegmentPanel extends JPanel
         {
             segmentationMode(segment);
             segmentMode = GeneImageAspect.ADAPTIVE_CIRCLE;
-            engine.setSample_SegmentationMethod(myNumber, segmentMode);
+            manager.setSample_SegmentationMethod(myNumber, segmentMode);
             refreshSegmentation();
         });
         segment.add(rdbtnNewRadioButton);
@@ -707,7 +705,7 @@ public class SegmentPanel extends JPanel
         {
             segmentationMode(segment);
             segmentMode = GeneImageAspect.SEEDED_REGION;
-            engine.setSample_SegmentationMethod(myNumber, segmentMode);
+            manager.setSample_SegmentationMethod(myNumber, segmentMode);
             refreshSegmentation();
         });
 
@@ -782,7 +780,7 @@ public class SegmentPanel extends JPanel
             if (sdGreenSlide != null)
             {
                 updateGeneInfo(segmentMode);
-                engine.setSample_MethodThreshold(myNumber, slidderSeededThreshold.getValue());
+                manager.setSample_MethodThreshold(myNumber, slidderSeededThreshold.getValue());
                 sdGreenSlide.repaint();
                 sdRedSlide.repaint();
             }
@@ -863,7 +861,7 @@ public class SegmentPanel extends JPanel
                         ratioMethod = GeneImageAspect.AVG_SUBTRACT_BG;
                         break;
                 }
-                engine.setSample_RatioMethod(myNumber, ratioMethod);
+                manager.setSample_RatioMethod(myNumber, ratioMethod);
 
                 updateGeneInfo(segmentMode);
             }

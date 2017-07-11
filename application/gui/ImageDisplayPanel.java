@@ -27,10 +27,9 @@
 
 package application.gui;
 
+import application.engine.GuiManager;
 import ij.ImagePlus;
 import ij.gui.ImageCanvas;
-
-import application.internal.Engine;
 
 import javax.swing.*;
 import java.awt.*;
@@ -43,7 +42,7 @@ import java.util.ArrayList;
  */
 public class ImageDisplayPanel extends JPanel {
 
-    private Engine engine;
+    private GuiManager manager;
     private int myNumber;
 
     private double zoomed=1.0; //magnification
@@ -57,9 +56,9 @@ public class ImageDisplayPanel extends JPanel {
     /**Currently selected grid**/
     private int current_grid_number;
 
-    public ImageDisplayPanel(Engine engine, Image im, int number)
+    public ImageDisplayPanel(GuiManager manager, Image im, int number)
     {
-        this.engine = engine;
+        this.manager = manager;
         this.myNumber = number;
 
         ip = new ImagePlus("Overlayed",im);
@@ -237,7 +236,7 @@ public class ImageDisplayPanel extends JPanel {
 
     //This method will connec the first two lines.
     private void drawLines(Graphics g, int x1, int y1, int x2, int y2){
-        for(int i = 0; i<engine.getSample_GridCount(myNumber); i++){
+        for(int i = 0; i< manager.getSample_GridCount(myNumber); i++){
             //Grid grid = manager.getGrid(i);
             Polygon p = new Polygon();
 
@@ -258,6 +257,7 @@ public class ImageDisplayPanel extends JPanel {
     private ArrayList<Polygon[]> horilines_list = new ArrayList<>();
     public void addGrid(double angle, Polygon master, Polygon base, Polygon outer, Polygon[] vert, Polygon[] hori)
     {
+        System.out.println(angle);
         angle_list.add(angle);
         masterpoly_list.add(master);
         basepoly_list.add(base);
@@ -283,5 +283,20 @@ public class ImageDisplayPanel extends JPanel {
         vertlines_list.set(grid, vert);
         horilines_list.set(grid, hori);
         repaint();
+    }
+
+    public void removeCurrentGrid()
+    {
+        angle_list.remove(current_grid_number);
+        masterpoly_list.remove(current_grid_number);
+        basepoly_list.remove(current_grid_number);
+        outerpoly_list.remove(current_grid_number);
+        vertlines_list.remove(current_grid_number);
+        horilines_list.remove(current_grid_number);
+        if (current_grid_number > basepoly_list.size() - 1)
+        {
+            current_grid_number = basepoly_list.size() - 1;
+        }
+        gridCount--;
     }
 }

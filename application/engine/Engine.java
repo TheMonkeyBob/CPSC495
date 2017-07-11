@@ -1,11 +1,21 @@
-package application.internal;
+package application.engine;
 
 import java.awt.*;
 import java.io.IOException;
+import java.io.ObjectInput;
 
 import application.GeneImageAspect;
+import application.engine.FileIOManager;
+import application.engine.GuiManager;
+import application.engine.InternalManager;
 import application.file.ExpressionWriter;
+import application.gui.MainWindow;
+import application.internal.AllGeneData;
+import application.internal.Project;
 import ij.ImagePlus;
+import ij.gui.GUI;
+
+import javax.swing.*;
 
 /**
  * Created by Lukas Pihl
@@ -14,14 +24,30 @@ public class Engine
 {
     private Project project;
     private ExpressionWriter exp_writer;
+    private GuiManager manager_GUI;
+    private FileIOManager manager_File;
+    private InternalManager manager_Internal;
 
     /**
      * Creates new Engine with default settings
      */
     public Engine()
     {
+        manager_GUI = new GuiManager(this);
+        manager_File = new FileIOManager(this);
+        //manager_Internal = new InternalManager(this);
         project = new Project();
         exp_writer = null;
+    }
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // Internal Functions
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    public void newProject(String path)
+    {
+        manager_File.newProject(path);
+        project.setPath(path);
+        //project.setName(name);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -36,12 +62,17 @@ public class Engine
             AllGeneData agd = new AllGeneData(project.getSample(sample));
             agd.calculate();
             String gname, line;
-            for (int i = 0; i < agd.nSpots; i++) {
+            for (int i = 0; i < agd.getSpotCount(); i++)
+            {
                 gname = agd.getGeneName(i);
                 boolean flagStatus = agd.getFlagStatus(i);
-                if(!gname.equalsIgnoreCase("empty")&&!gname.equalsIgnoreCase("blank")&&!gname.equalsIgnoreCase("missing")&&!gname.equalsIgnoreCase("none")&&!gname.equalsIgnoreCase("No Gene Specified")){
+                if(!gname.equalsIgnoreCase("empty") && !gname.equalsIgnoreCase("blank") &&
+                        !gname.equalsIgnoreCase("missing") && !gname.equalsIgnoreCase("none") &&
+                        !gname.equalsIgnoreCase("No Gene Specified"))
+                {
                     line = gname+'\t';
-                    if(!flagStatus) {
+                    if(!flagStatus)
+                    {
                         line = line+String.valueOf(agd.getRatio(i));
                     }
                     else line = line + "\t";
@@ -58,117 +89,40 @@ public class Engine
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // Grid Profile Functions
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    /**
-     * Add a grid profile to the project
-     * @param name The name of the grid profile
-     * @param num The number of grids in the grid profile
-     * @param hor The horizontal flag for the grid profile
-     * @param ver The vertical flag for the grid profile
-     * @param dir The direction flag for the grid profile
-     */
-    public void addGridProfile(String name, int num, boolean hor, boolean ver, boolean dir)
-    {
-        project.addGridProfile(name, num, hor, ver, dir);
-    }
-
-    /**
-     * Returns the number of grid profiles
-     * @return The current number of grid profiles
-     */
-    public int getGridProfile_Count()
-    {
-        return project.getGridProfile_Count();
-    }
-
-    /**
-     * Removes the grid profile from the specific index.
-     * @param index The index of the grid profile to remove. Base index 0.
-     */
-    public void removeGridProfile(int index)
-    {
-        project.removeGridProfile(index);
-    }
-
-    /**
-     * Modifies the grid profile at the specified index.
-     * @param index The index of the grid profile to remove. Base index 0.
-     * @param name The new name for the grid profile.
-     * @param num The new number of grids for the grid profile.
-     * @param hor The new horizontal flag for the grid profile.
-     * @param ver The new vertical flag for the grid profile.
-     * @param dir The new direction flag for the grid profile.
-     */
-    public void modifyGridProfile(int index, String name, int num, boolean hor, boolean ver, boolean dir)
-    {
-        project.modifyGridProfile(index, name, num, hor, ver, dir);
-    }
-
-    /**
-     * Return the name for the specified grid profile.
-     * @param index The index of the grid profile. Base index 0.
-     * @return The name of the grid profile.
-     */
-    public String getGridProfile_Name(int index)
-    {
-        return project.getGridProfile_Name(index);
-    }
-
-    /**
-     * Return the number of grids for the specified grid profile.
-     * @param index The index of the grid profile. Base index 0.
-     * @return The number of grids.
-     */
-    public int getGridProfile_Number(int index)
-    {
-        return project.getGridProfile_Number(index);
-    }
-
-    /**
-     * Return the horizontal flag for the specified grid profile.
-     * @param index The index of the grid profile. Base index 0.
-     * @return The horizontal flag.
-     */
-    public boolean getGridProfile_Horizontal(int index)
-    {
-        return project.getGridProfile_Horizontal(index);
-    }
-
-    /**
-     * Return the vertical flag for the specified grid profile.
-     * @param index The index of the grid profile. Base index 0.
-     * @return The vertical flag.
-     */
-    public boolean getGridProfile_Vertical(int index)
-    {
-        return project.getGridProfile_Vertical(index);
-    }
-
-    /**
-     * Return the direction flag for the specified grid profile.
-     * @param index The index of the grid profile. Base index 0.
-     * @return The direction flag.
-     */
-    public boolean getGridProfile_Direction(int index)
-    {
-        return project.getGridProfile_Direction(index);
-    }
-
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     // Sample Functions
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-    /**
-     * Add new profile to the project.
-     */
-    public void addSample()
+    public void addSample(Object caller, String path, String name, ImagePlus green, ImagePlus red)
     {
-        project.addSample();
+        if (caller != null && caller instanceof FileIOManager)
+        {
+            project.addSample(path, name, green, red);
+        }
     }
 
-    public void addSample(String greenPath, String redPath) { project.addSample(greenPath, redPath); }
+    public void addSample(Object caller, String greenPath, String redPath, String genePath)
+    {
+        if (caller != null && caller instanceof GuiManager)
+        {
+            //manager_File.newSample(greenPath, redPath, genePath)
+            project.addSample(greenPath, redPath);
+        }
+    }
+
+    public int getSampleCount()
+    {
+        return project.getSampleCount();
+    }
+
+    public String getSample_Name(int sample)
+    {
+        return project.getSample_Name(sample);
+    }
+
+    public String getSample_FilePath(int sample)
+    {
+        return project.getSample_FilePath(sample);
+    }
 
     /**
      * Gets the number of grids for the specified sample.
@@ -190,9 +144,12 @@ public class Engine
         project.addSample_Grid(sample, tlX, tlY, trX, trY, bX, bY, rows, columns);
     }
 
-    public void removeSample_Grid(int sample, int grid)
+    public void removeSample_Grid(Object caller, int sample, int grid)
     {
-        project.removeSample_Grid(sample, grid);
+        if (caller != null && caller instanceof GuiManager)
+        {
+            project.removeSample_Grid(sample, grid);
+        }
     }
 
     public Polygon getSample_Grid_Polygon_Master(int sample, int grid)
@@ -251,9 +208,12 @@ public class Engine
         project.setSample_Grid_MoveBy(sample, grid, x, y);
     }
 
-    public void setSample_Grid_MoveTo(int sample, int grid, int x, int y)
+    public void setSample_Grid_MoveTo(Object caller, int sample, int grid, int x, int y)
     {
-        project.setSample_Grid_MoveTo(sample, grid, x, y);
+        if (caller != null && caller instanceof GuiManager)
+        {
+            project.setSample_Grid_MoveTo(sample, grid, x, y);
+        }
     }
 
     public void setSample_Grid_RotateBy(int sample, int grid, double degree)
@@ -261,9 +221,12 @@ public class Engine
         project.setSample_Grid_RotateBy(sample, grid, degree);
     }
 
-    public void setSample_Grid_RotateTo(int sample, int grid, double degree)
+    public void setSample_Grid_RotateTo(Object caller, int sample, int grid, double degree)
     {
-        project.setSample_Grid_RotateTo(sample, grid, degree);
+        if (caller != null && caller instanceof GuiManager)
+        {
+            project.setSample_Grid_RotateTo(sample, grid, degree);
+        }
     }
 
     public void setSample_Grid_ResizeBy(int sample, int grid, int height, int width)
@@ -271,14 +234,32 @@ public class Engine
         project.setSample_Grid_ResizeBy(sample, grid, height, width);
     }
 
-    public void setSample_Grid_ResizeTo(int sample, int grid, int height, int width)
+    public void setSample_Grid_ResizeTo(Object caller, int sample, int grid, int height, int width)
     {
-        project.setSample_Grid_ResizeTo(sample, grid, height, width);
+        if (caller != null && caller instanceof GuiManager)
+        {
+            project.setSample_Grid_ResizeTo(sample, grid, height, width);
+        }
     }
 
     public double getSample_Grid_Angle(int sample, int grid)
     {
         return project.getSample_Grid_Angle(sample, grid);
+    }
+
+    public int[] getSample_Grid_MasterPoints(int sample, int grid)
+    {
+        return project.getSample_Grid_MasterPoints(sample, grid);
+    }
+
+    public int[] getSample_Grid_RowsAndColumns(int sample, int grid)
+    {
+        return project.getSample_Grid_RowsAndColumns(sample, grid);
+    }
+
+    public void removeSample_Grid_All(int sample)
+    {
+        project.removeSample_Grid_All(sample);
     }
 
     /**
@@ -338,9 +319,12 @@ public class Engine
      * @param sample The index of the sample. Base index 0.
      * @param grid The index of the grid. Base index 0.
      */
-    public void setSample_CurrentGrid(int sample, int grid)
+    public void setSample_CurrentGrid(Object caller, int sample, int grid)
     {
-        project.setSample_CurrentGrid(sample, grid);
+        if (caller != null && caller instanceof GuiManager)
+        {
+            project.setSample_CurrentGrid(sample, grid);
+        }
     }
 
     /**
@@ -348,9 +332,12 @@ public class Engine
      * @param sample The index of the sample. Base index 0.
      * @param spot The spot in the focused grid.
      */
-    public void setSample_CurrentSpot(int sample, int spot)
+    public void setSample_CurrentSpot(Object caller, int sample, int spot)
     {
-        project.setSample_CurrentSpot(sample, spot);
+        if (caller != null && caller instanceof GuiManager)
+        {
+            project.setSample_CurrentSpot(sample, spot);
+        }
     }
 
     /**
@@ -385,9 +372,12 @@ public class Engine
      * @param grid The index of the grid. Base index 0.
      * @param spots Translated polygon to set the spots from.
      */
-    public void setSample_Grid_Spots(int sample, int grid, Polygon spots)
+    public void setSample_Grid_Spots(Object caller, int sample, int grid, Polygon spots)
     {
-        project.setSample_Grid_Spots(sample, grid, spots);
+        if (caller != null && caller instanceof GuiManager)
+        {
+            project.setSample_Grid_Spots(sample, grid, spots);
+        }
     }
 
     /**
@@ -441,9 +431,13 @@ public class Engine
      * @param type 1 = Adaptive circle. 2 = Seeded Region.
      * @param params List of extra parameters for the type.
      */
-    public void setSample_Gene_Data(int sample, int[] redPixels, int[] greenPixels, int height, int width, int type, Object[] params)
+    public void setSample_Gene_Data(Object caller, int sample, int[] redPixels, int[] greenPixels, int height,
+                                    int width, int type, Object[] params)
     {
-        project.setSample_Gene_Data(sample, redPixels, greenPixels, height, width, type, params);
+        if (caller != null && caller instanceof GuiManager)
+        {
+            project.setSample_Gene_Data(sample, redPixels, greenPixels, height, width, type, params);
+        }
     }
 
     /**
@@ -580,19 +574,28 @@ public class Engine
         return project.getSample_Grid_Spot(sample, grid, spot);
     }
 
-    public void setSample_RatioMethod(int sample, int method)
+    public void setSample_RatioMethod(Object caller, int sample, int method)
     {
-        project.setSample_RatioMethod(sample, method);
+        if (caller != null && caller instanceof  GuiManager)
+        {
+            project.setSample_RatioMethod(sample, method);
+        }
     }
 
-    public void setSample_SegmentationMethod(int sample, int method)
+    public void setSample_SegmentationMethod(Object caller, int sample, int method)
     {
-        project.setSample_SegmentationMethod(sample, method);
+        if (caller != null && caller instanceof GuiManager)
+        {
+            project.setSample_SegmentationMethod(sample, method);
+        }
     }
 
-    public void setSample_MethodThreshold(int sample, int threshold)
+    public void setSample_MethodThreshold(Object caller, int sample, int threshold)
     {
-        project.setSample_MethodThreshold(sample, threshold);
+        if (caller != null && caller instanceof GuiManager)
+        {
+            project.setSample_MethodThreshold(sample, threshold);
+        }
     }
 
     public Image getSample_GreenImage(int sample)

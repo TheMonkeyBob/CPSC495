@@ -307,4 +307,9 @@ public class AllGeneData {
 	public void invalidate() {
 		valid = false;
 	}
+
+	public int getSpotCount()
+	{
+		return nSpots;
+	}
 }

@@ -27,6 +27,9 @@ public class Sample
     private int ratio_method = 1;
     private int method_threshold = 10;
 
+    private String name;
+    private String path;
+
     /**
      * Creates new sample with default settings.
      */
@@ -44,6 +47,27 @@ public class Sample
     {
         this();
         loadImagePlus(greenPath, redPath);
+        name = "";
+        path = "";
+    }
+
+    public Sample(String path, String name, ImagePlus green, ImagePlus red)
+    {
+        this();
+        this.path = path;
+        this.name = name;
+        this.green_IP = green;
+        this.red_IP = red;
+    }
+
+    public String getName()
+    {
+        return name;
+    }
+
+    public String getFilePath()
+    {
+        return path;
     }
 
     public void setRatioMethod(int method)
@@ -264,6 +288,11 @@ public class Sample
         }
     }
 
+    public void removeGrid_All()
+    {
+        grid_manager.setGridNum(0);
+    }
+
     public Polygon getGrid_Polygon_Master(int grid)
     {
         return grid_manager.getGrid(grid).getPolygon_Master();
@@ -344,6 +373,18 @@ public class Sample
     public double getGrid_Angle(int grid)
     {
         return grid_manager.getGrid(grid).getAngle();
+    }
+
+    public int[] getGrid_MasterPoints(int grid)
+    {
+        Grid g = grid_manager.getGrid(grid);
+        return new int[]{g.getLeftX(), g.getRightX(), g.getTopY(), g.getBottomY()};
+    }
+
+    public int[] getGrid_RowsAndColumns(int grid)
+    {
+        Grid g = grid_manager.getGrid(grid);
+        return new int[]{g.getRows(), g.getColumns()};
     }
 
     /**

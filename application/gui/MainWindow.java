@@ -1,6 +1,6 @@
 package application.gui;
 
-import application.internal.Engine;
+import application.engine.GuiManager;
 
 import javax.swing.*;
 import javax.swing.border.BevelBorder;
@@ -13,7 +13,8 @@ import java.io.*;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainWindow extends JFrame {
+public class MainWindow extends JFrame
+{
     private static final long serialVersionUID = 1L;
 
     private JPanel contentPane;
@@ -29,12 +30,11 @@ public class MainWindow extends JFrame {
     private String importFileNamePath;
     private String exportFileNamePath;
 
-    private Engine engine;
+    private GuiManager manager;
 
     String[] dataArray;
     String CSVData;
 
-    private ArrayList<TabPanel> panelArrayList;
     private JTabbedPane tabbedPane;
     private int counterSample = 1;
 
@@ -49,13 +49,13 @@ public class MainWindow extends JFrame {
     /**
      * Create the frame.
      */
-    public MainWindow(Engine engine)
+    public MainWindow(GuiManager manager)
     {
         super("Improved Magic Tool");
         setIconImage(Toolkit.getDefaultToolkit().getImage(MainWindow.class.getResource("/application/img/magic-wand-icon.png")));
         main = this;
 
-        this.engine = engine;
+        this.manager = manager;
 
         //TODO: set better close operation
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -74,8 +74,62 @@ public class MainWindow extends JFrame {
         JMenuItem mntmNewProject = new JMenuItem("New Project....");
         mntmNewProject.setMnemonic(KeyEvent.VK_N);
         mntmNewProject.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, ActionEvent.CTRL_MASK));
-        mntmNewProject.addActionListener(pickedNew -> {
+        mntmNewProject.addActionListener(pickedNew ->
+        {
+            Thread importThread = new Thread() {
 
+                public void run() {
+
+                    //importBar = new JProgressBar();
+                    //importBar.setVisible(true);
+                    //importBar.setIndeterminate(true);
+
+                    class NewProject extends SwingWorker<Void, Void>
+                    {
+                        JFileChooser chooser = new JFileChooser();
+                        FileNameExtensionFilter filter;
+                        String filePath = "";
+                        boolean pass = false;
+
+                        @Override
+                        public Void doInBackground() throws Exception
+                        {
+                            try
+                            {
+                                File f;
+                                chooser.setDialogTitle("Select Project Location");
+                                chooser.showSaveDialog(null);
+                                f = chooser.getSelectedFile();
+
+                                pass = true;
+                            }
+                            catch (NullPointerException ex)
+                            {
+                                //JOptionPane.showMessageDialog(null, "Pair selection canceled.", "File warning",
+                                //        JOptionPane.WARNING_MESSAGE);
+                            }
+                            if (pass)
+                            {
+                                manager.newProject(filePath);
+                            }
+                            return null;
+                        }
+
+                        @Override
+                        public void done()
+                        {
+                            importBar.setIndeterminate(false);
+                            if (pass)
+                            {
+                                //JOptionPane.showMessageDialog(null, "Import Complete.");
+                            }
+                        }
+                    }
+                    new NewProject().execute();
+                }
+
+            };
+            importThread.start();
             // TODO New project code goes here.
 
         });
@@ -314,8 +368,8 @@ public class MainWindow extends JFrame {
                     importBar.setVisible(true);
                     importBar.setIndeterminate(true);
 
-                    class ImportGene extends SwingWorker<Void, Void> {
-
+                    class ImportGene extends SwingWorker<Void, Void>
+                    {
                         JFileChooser chooser = new JFileChooser();
                         FileNameExtensionFilter filter;
                         String greenPath = "";
@@ -324,9 +378,10 @@ public class MainWindow extends JFrame {
                         boolean pass = false;
 
                         @Override
-                        public Void doInBackground() throws Exception {
-
-                            try {
+                        public Void doInBackground() throws Exception
+                        {
+                            try
+                            {
                                 filter = new FileNameExtensionFilter("TIF file", "tif");
                                 chooser.setFileFilter(filter);
                                 File f;
@@ -350,32 +405,27 @@ public class MainWindow extends JFrame {
                                 pass = true;
                                 // TODO file importing code goes here.
 
-                            } catch (NullPointerException ex) {
-
+                            }
+                            catch (NullPointerException ex)
+                            {
                                 JOptionPane.showMessageDialog(null, "Pair selection canceled.", "File warning",
                                         JOptionPane.WARNING_MESSAGE);
-
                             }
-                            if (pass) {
-                                engine.addSample(greenPath, redPath);
-                                TabPanel panel = new TabPanel(main, engine, tab_panel_number);
-                                tabbedPane.addTab("Sample " + counterSample++, null, panel, null);
-                                for (int i = 0; i < engine.getGridProfile_Count(); i++)
-                                {
-                                    panel.addToComboBox(engine.getGridProfile_Name(i), false);
-                                }
-                                tabbedPane.setSelectedIndex(tabbedPane.getTabCount() - 1);
-                                engine.setSample_Gene_ListFile(tab_panel_number, genePath);
-                                tab_panel_number++;
-                                panelArrayList.add(panel);
+                            if (pass)
+                            {
+                                manager.addSample(greenPath, redPath, genePath);
                             }
                             return null;
                         }
 
                         @Override
-                        public void done() {
+                        public void done()
+                        {
                             importBar.setIndeterminate(false);
-                            JOptionPane.showMessageDialog(null, "Import Complete.");
+                            if (pass)
+                            {
+                                JOptionPane.showMessageDialog(null, "Import Complete.");
+                            }
                         }
                     }
                     new ImportGene().execute();
@@ -428,7 +478,7 @@ public class MainWindow extends JFrame {
                             {
                                 //TODO: Get focused TabPanel
                                 int focused_tab_num = 0;
-                                engine.File_ExportExpressionData(exportFileNamePath, focused_tab_num);
+                                manager.fileIO_ExportExpressionData(exportFileNamePath, focused_tab_num);
                             }
 
                             return null;
@@ -548,53 +598,15 @@ public class MainWindow extends JFrame {
         gbl_contentPane.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
         gbl_contentPane.rowWeights = new double[] { 1.0, Double.MIN_VALUE };
         contentPane.setLayout(gbl_contentPane);
+    }
 
-        tabbedPane = new JTabbedPane(JTabbedPane.TOP);
+    public void setTabbedPane(JTabbedPane tp)
+    {
+        tabbedPane = tp;
         GridBagConstraints gbc_tabbedPane = new GridBagConstraints();
         gbc_tabbedPane.fill = GridBagConstraints.BOTH;
         gbc_tabbedPane.gridx = 0;
         gbc_tabbedPane.gridy = 0;
         contentPane.add(tabbedPane, gbc_tabbedPane);
-
-        // initialize tab list
-        panelArrayList = new ArrayList<TabPanel>();
-    }
-
-    // Use to test open and import data integrity.
-    private void testData() {
-
-        for (int i = 0; i < dataArray.length; i++) {
-
-            System.out.println(dataArray[i]);
-        }
-
-    }
-
-    protected void addGridProfile(String name, int num, boolean hor, boolean ver, boolean dir)
-    {
-        engine.addGridProfile(name, num, hor, ver, dir);
-        for (int i = 0; i < panelArrayList.size(); ++i) {
-            if (i == tabbedPane.getSelectedIndex()) {
-                panelArrayList.get(i).addToComboBox(name, true);
-            } else {
-                panelArrayList.get(i).addToComboBox(name, false);
-            }
-        }
-    }
-
-    protected void removeGridProfile(int index) {
-        engine.removeGridProfile(index);
-        for (TabPanel tp : panelArrayList) {
-            tp.removeFromComboBox(index);
-        }
-    }
-
-    protected void modifyGridProfile(int index, String name, int num, boolean hor, boolean ver, boolean dir)
-    {
-        engine.modifyGridProfile(index, name, num, hor, ver, dir);
-        for (TabPanel tp : panelArrayList)
-        {
-            tp.changeInComboBox(name, index);
-        }
     }
 }

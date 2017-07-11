@@ -1,9 +1,9 @@
 package application.gui;
 
+import application.engine.GuiManager;
 import ij.ImagePlus;
 
 import application.GeneImageAspect;
-import application.internal.Engine;
 
 import javax.swing.*;
 import javax.swing.border.Border;
@@ -12,13 +12,12 @@ import java.awt.*;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 
-class TabPanel extends JPanel {
+public class TabPanel extends JPanel {
 
     private static final long serialVersionUID = 1L;
 
-    public TabPanel(MainWindow main, Engine engine, int number) {
-        this.main = main;
-        this.engine = engine;
+    public TabPanel(GuiManager manager, int number) {
+        this.manager = manager;
         this.myNumber = number;
         setup();
     }
@@ -32,7 +31,7 @@ class TabPanel extends JPanel {
 
     private JScrollPane gridScrollPane;
     private JPanel gridScrollPanePanel;
-    private ArrayList<GridPanelPanel> gridPanelsList = new ArrayList<>();
+    private ArrayList<GridPanel> gridPanelsList = new ArrayList<>();
     private Border blackline = BorderFactory.createLineBorder(Color.black);
     private JTextArea textArea_1;
     private JTextArea textArea_2;
@@ -42,7 +41,6 @@ class TabPanel extends JPanel {
     private ButtonGroup group1;
     private ButtonGroup group2;
     private ImageDisplayPanel imageDisplayPanel;
-    protected MainWindow main;
     private JComboBox<String> comboBox;
     private JSlider slidderSeededThreshold;
     private JSpinner spnGrid;
@@ -56,11 +54,11 @@ class TabPanel extends JPanel {
     private ImagePlus ipGrn;
     private ImagePlus ipRed;
     private int segmentMode;
-    private GridPanel panel_Grid;
+    private GridingPanel panel_Grid;
 
     private JScrollPane scrollPane_MainImage;
 
-    private ImageDisplay imageDisplay;
+    private ImageDisplayTruePanel imageDisplay;
 
     /**Automatic Flagging Options Dialog associated with the SegmentFrame associated with this SegmentPanel*/
     //protected AutoFlaggingOptionsDialog afod;
@@ -71,7 +69,7 @@ class TabPanel extends JPanel {
 
     protected double cellHeight;
 
-    private Engine engine;
+    private GuiManager manager;
 
     private int gridCount = 0;
     private int selectedProfileNum = 0;
@@ -82,94 +80,102 @@ class TabPanel extends JPanel {
     protected Polygon cell;
     private int newTopLeftX, newTopLeftY, gridNum, spotNum;
 
-    private void setup() {
+    private void setup()
+    {
         ratioMethod = GeneImageAspect.TOTAL_SIGNAL;
 
         this.setBorder(blackline);
-        GridBagLayout gbl_panel = new GridBagLayout();
-        gbl_panel.columnWidths = new int[] { 550, 325, 325 };
-        gbl_panel.rowHeights = new int[] { 5, 290, 100, 440, 35 };
-        gbl_panel.columnWeights = new double[] { 1.0 };
-        gbl_panel.rowWeights = new double[] { Double.MIN_VALUE };
-        this.setLayout(gbl_panel);
+        //GridBagLayout gbl_panel = new GridBagLayout();
+        //gbl_panel.columnWidths = new int[] { 550, 325, 325 };
+        //gbl_panel.rowHeights = new int[] { 5, 290, 100, 440, 35 };
+        //gbl_panel.columnWeights = new double[] { 1.0 };
+        //gbl_panel.rowWeights = new double[] { Double.MIN_VALUE };
+        //this.setLayout(gbl_panel);
+        this.setLayout(null);
 
-        GridBagConstraints gbc_scrollField = new GridBagConstraints();
-        gbc_scrollField.insets = new Insets(5, 5, 5, 5);
-        gbc_scrollField.fill = GridBagConstraints.BOTH;
-        gbc_scrollField.gridx = 0;
-        gbc_scrollField.gridy = 0;
-        gbc_scrollField.gridheight = 4;
-        gbc_scrollField.weightx = 1.0;
-        gbc_scrollField.weighty = 1.0;
-        gbc_scrollField.insets = new Insets(5, 5, 0, 0); // top, left,
-        // bottom,
-        // right
-        imageDisplay = new ImageDisplay(myNumber, engine, this);
-        this.add(imageDisplay, gbc_scrollField);
+        //GridBagConstraints gbc_scrollField = new GridBagConstraints();
+        //gbc_scrollField.insets = new Insets(5, 5, 5, 5);
+        //gbc_scrollField.fill = GridBagConstraints.BOTH;
+        //gbc_scrollField.gridx = 0;
+        //gbc_scrollField.gridy = 0;
+        //gbc_scrollField.gridheight = 4;
+        //gbc_scrollField.weightx = 1.0;
+        //gbc_scrollField.weighty = 1.0;
+        //gbc_scrollField.insets = new Insets(5, 5, 0, 0); // top, left, bottom, right
+        imageDisplay = new ImageDisplayTruePanel(myNumber, manager, this);
+        imageDisplay.setBounds(10, 10, (int)(this.getWidth()*(3.0/5.0) - 10), this.getHeight()-20);
+        //this.add(imageDisplay, gbc_scrollField);
+        this.add(imageDisplay);
+
         // textField.setColumns(10);
 
-        JSlider slider = new JSlider(JSlider.HORIZONTAL, 0, 100, 0);
-        slider.setMajorTickSpacing(10);
-        slider.setMinorTickSpacing(1);
-        slider.setPaintTicks(false);
-        slider.setPaintLabels(false);
-        GridBagConstraints gbc_slider = new GridBagConstraints();
-        gbc_slider.fill = GridBagConstraints.HORIZONTAL;
-        gbc_slider.insets = new Insets(0, 0, 0, 5);
-        gbc_slider.gridx = 0;
-        gbc_slider.gridy = 4;
-        this.add(slider, gbc_slider);
+        //JSlider slider = new JSlider(JSlider.HORIZONTAL, 0, 100, 0);
+        //slider.setMajorTickSpacing(10);
+        //slider.setMinorTickSpacing(1);
+        //slider.setPaintTicks(false);
+        //slider.setPaintLabels(false);
+        //GridBagConstraints gbc_slider = new GridBagConstraints();
+        //gbc_slider.fill = GridBagConstraints.HORIZONTAL;
+        //gbc_slider.insets = new Insets(0, 0, 0, 5);
+        //gbc_slider.gridx = 0;
+        //gbc_slider.gridy = 4;
+        //this.add(slider, gbc_slider);
 
-        JLabel lblZoomLevel = new JLabel("Zoom Level");
-        GridBagConstraints gbc_lblZoomLevel = new GridBagConstraints();
-        gbc_lblZoomLevel.anchor = GridBagConstraints.WEST;
-        gbc_lblZoomLevel.insets = new Insets(0, 0, 0, 5);
-        gbc_lblZoomLevel.gridx = 1;
-        gbc_lblZoomLevel.gridy = 4;
-        this.add(lblZoomLevel, gbc_lblZoomLevel);
+        //JLabel lblZoomLevel = new JLabel("Zoom Level");
+        //GridBagConstraints gbc_lblZoomLevel = new GridBagConstraints();
+        //gbc_lblZoomLevel.anchor = GridBagConstraints.WEST;
+        //gbc_lblZoomLevel.insets = new Insets(0, 0, 0, 5);
+        //gbc_lblZoomLevel.gridx = 1;
+        //gbc_lblZoomLevel.gridy = 4;
+        //this.add(lblZoomLevel, gbc_lblZoomLevel);
 
         // Gridding panel starts here
-        panel_Grid = new GridPanel(main, this);
+        panel_Grid = new GridingPanel(manager, this);
         TitledBorder grid_title = BorderFactory.createTitledBorder(blackline, "Gridding");
         grid_title.setTitleJustification(TitledBorder.LEFT);
         panel_Grid.setBorder(grid_title);
         panel_Grid.setLayout(null);
-        GridBagConstraints gbc_gridding = new GridBagConstraints();
-        gbc_gridding.insets = new Insets(0, 5, 5, 0);
-        gbc_gridding.fill = GridBagConstraints.BOTH;
-        gbc_gridding.gridx = 1;
-        gbc_gridding.gridy = 1;
-        gbc_gridding.gridheight = 2;
-        gbc_gridding.gridwidth = 2;
-        gbc_gridding.weightx = 1.0;
-        gbc_gridding.weighty = 1.0;
-        gbc_gridding.insets = new Insets(0, 5, 5, 5); // top, left, bottom,
-        // right
-        this.add(panel_Grid, gbc_gridding);
+        //GridBagConstraints gbc_gridding = new GridBagConstraints();
+        //gbc_gridding.insets = new Insets(0, 5, 5, 0);
+        //gbc_gridding.fill = GridBagConstraints.BOTH;
+        //gbc_gridding.gridx = 1;
+        //gbc_gridding.gridy = 1;
+        //gbc_gridding.gridheight = 2;
+        //gbc_gridding.gridwidth = 2;
+        //gbc_gridding.weightx = 1.0;
+        //gbc_gridding.weighty = 1.0;
+        //gbc_gridding.insets = new Insets(0, 5, 5, 5); // top, left, bottom, right
+        //this.add(panel_Grid, gbc_gridding);
+        panel_Grid.setBounds(imageDisplay.getX() + imageDisplay.getWidth(), imageDisplay.getY(),
+                (int)(this.getWidth() - this.getWidth()*(3.0/5.0) - 20), (int)(this.getHeight()*(3.0/5.0) - 10));
+        this.add(panel_Grid);
 
         // Segmentation panel starts here
-        segment = new SegmentPanel(main, myNumber, engine);
+        segment = new SegmentPanel(myNumber, manager);
         TitledBorder seg_title = BorderFactory.createTitledBorder(blackline, "Segmentation");
         seg_title.setTitleJustification(TitledBorder.LEFT);
         segment.setBorder(seg_title);
         segment.setLayout(null);
-        GridBagConstraints gbc_segment = new GridBagConstraints();
-        gbc_segment.insets = new Insets(0, 5, 5, 0);
-        gbc_segment.fill = GridBagConstraints.BOTH;
-        gbc_segment.gridx = 1;
-        gbc_segment.gridy = 3;
-        gbc_segment.gridheight = 1;
-        gbc_segment.gridwidth = 2;
-        gbc_segment.weightx = 1.0;
-        gbc_segment.weighty = 1.0;
-        gbc_segment.insets = new Insets(0, 5, 5, 5); // top, left, bottom, right
-        this.add(segment, gbc_segment);
+        segment.setBounds(panel_Grid.getX(), panel_Grid.getY() + panel_Grid.getHeight(), panel_Grid.getWidth(),
+                (int)(this.getHeight() - this.getHeight()*(3.0/5.0) - 20));
+        //GridBagConstraints gbc_segment = new GridBagConstraints();
+        //gbc_segment.insets = new Insets(0, 5, 5, 0);
+        //gbc_segment.fill = GridBagConstraints.BOTH;
+        //gbc_segment.gridx = 1;
+        //gbc_segment.gridy = 3;
+        //gbc_segment.gridheight = 1;
+        //gbc_segment.gridwidth = 2;
+        //gbc_segment.weightx = 1.0;
+        //gbc_segment.weighty = 1.0;
+        //gbc_segment.insets = new Insets(0, 5, 5, 5); // top, left, bottom, right
+        //this.add(segment, gbc_segment);
+        this.add(segment);
     }
 
     public void addGrid(int tlX, int tlY, int trX, int trY, int bX, int bY, int row, int col)
     {
         gridCount++;
-        engine.addSample_Grid(myNumber, tlX, tlY, trX, trY, bX, bY, row, col);
+        manager.addSample_Grid(myNumber, tlX, tlY, trX, trY, bX, bY, row, col);
         imageDisplay.addGrid();
         refreshSegmentation();
     }
@@ -188,32 +194,12 @@ class TabPanel extends JPanel {
         }
     }
 
-    public void changeInComboBox(String s, int i)
-    {
-        boolean refocus = false;
-        if (comboBox.getSelectedIndex() == i)
-        {
-            refocus = true;
-        }
-        comboBox.removeItemAt(i);
-        comboBox.insertItemAt(s, i);
-        if (refocus)
-        {
-            comboBox.setSelectedIndex(i);
-            //engine.setSample_GridCount(myNumber, engine.getGridProfile_Number(i));
-            engine.setSample_GridHorizontal(myNumber, engine.getGridProfile_Horizontal(i));
-            engine.setSample_GridVertical(myNumber, engine.getGridProfile_Vertical(i));
-            engine.setSample_GridDirection(myNumber, engine.getGridProfile_Direction(i));
-            //updateGridCount();
-        }
-    }
-
     public void removeFromComboBox(int i)
     {
         if (i == comboBox.getSelectedIndex())
         {
             comboBox.setSelectedIndex(0);
-            //engine.setSample_GridCount(myNumber, 0);
+            //manager.setSample_GridCount(myNumber, 0);
             //updateGridCount();
         }
         comboBox.removeItemAt(i);
@@ -221,17 +207,17 @@ class TabPanel extends JPanel {
 
     private void updateGridCount()
     {
-        while (engine.getSample_GridCount(myNumber) < gridPanelsList.size())
+        while (manager.getSample_GridCount(myNumber) < gridPanelsList.size())
         {
             gridScrollPanePanel.remove(gridPanelsList.get(gridPanelsList.size() - 1));
             gridPanelsList.remove(gridPanelsList.size() - 1);
             gridCount--;
         }
 
-        while (engine.getSample_GridCount(myNumber) > gridPanelsList.size())
+        while (manager.getSample_GridCount(myNumber) > gridPanelsList.size())
         {
             gridCount++;
-            //GridPanelPanel gp = new GridPanelPanel(this, gridCount);
+            //GridPanel gp = new GridPanel(this, gridCount);
             //gridPanelsList.add(gp);
             //gridScrollPanePanel.add(gp);
         }
@@ -278,13 +264,13 @@ class TabPanel extends JPanel {
 
     private void segmentationMode(JPanel target)
     {
-        if (sdGreenSlide == null && engine.getSample_GridCount(myNumber) > 0
-                && engine.getSample_Grid_Columns(myNumber, 0) > 0)
+        if (sdGreenSlide == null && manager.getSample_GridCount(myNumber) > 0
+                && manager.getSample_Grid_Columns(myNumber, 0) > 0)
         {
-            sdGreenSlide = new SegmentDisplay(myNumber, true, engine);
+            sdGreenSlide = new SegmentDisplay(myNumber, true, manager);
             sdGreenSlide.setBounds(-10, -50, 200, 200);
 
-            sdRedSlide = new SegmentDisplay(myNumber, false, engine);
+            sdRedSlide = new SegmentDisplay(myNumber, false, manager);
             sdRedSlide.setBounds(-20, -100, 200, 200);
 
             scrollGreen = new JScrollPane(sdGreenSlide);
@@ -320,13 +306,13 @@ class TabPanel extends JPanel {
      * @param spot transformed spot number
      */
     public void setSpot(int grid, int spot) {
-        if (grid >= 0 && grid < engine.getSample_GridCount(myNumber) && spot >= 0
-                && spot < engine.getSample_Grid_NumberOfSpots(myNumber, grid))
+        if (grid >= 0 && grid < manager.getSample_GridCount(myNumber) && spot >= 0
+                && spot < manager.getSample_Grid_NumberOfSpots(myNumber, grid))
         {
             gridNum = grid;
             spotNum = spot;
-            engine.setSample_CurrentGrid(myNumber, grid);
-            engine.setSample_CurrentSpot(myNumber, engine.getSample_Grid_ActualSpotNum(myNumber, grid, spot));
+            manager.setSample_CurrentGrid(myNumber, grid);
+            manager.setSample_CurrentSpot(myNumber, manager.getSample_Grid_ActualSpotNum(myNumber, grid, spot));
             showCurrentCell();
         }
     }
@@ -366,7 +352,7 @@ class TabPanel extends JPanel {
      */
     public void setCurrentCell()
     {
-        Polygon p = engine.getSample_Grid_Polygon_Outline(myNumber, engine.getSample_CurrentGridNum(myNumber));
+        Polygon p = manager.getSample_Grid_Polygon_Outline(myNumber, manager.getSample_CurrentGridNum(myNumber));
         Polygon q = new Polygon();
         if (p != null)
         {
@@ -375,21 +361,22 @@ class TabPanel extends JPanel {
                 q.xpoints[j] = (int) ((sdGreenSlide.screenX(p.xpoints[j])) / sdGreenSlide.getZoom());
                 q.ypoints[j] = (int) ((sdGreenSlide.screenX(p.ypoints[j])) / sdGreenSlide.getZoom());
             }
-            engine.setSample_Grid_Spots(myNumber, engine.getSample_CurrentGridNum(myNumber), q);
-            cell = engine.getSample_Grid_CurrentSpot(myNumber, engine.getSample_CurrentGridNum(myNumber));
+            manager.setSample_Grid_Spots(myNumber, manager.getSample_CurrentGridNum(myNumber), q);
+            cell = manager.getSample_Grid_CurrentSpot(myNumber, manager.getSample_CurrentGridNum(myNumber));
         }
         cellHeight = cell.ypoints[3] - cell.ypoints[0];
     }
 
+    /*
     protected void updateGeneInfo(int i){
         if(i == GeneImageAspect.SEEDED_REGION)
         {
             Object[] params = new Object[1];
             params[0] = slidderSeededThreshold.getValue();
-            engine.setSample_Gene_Data(myNumber, sdRedSlide.getCellPixels(),sdGreenSlide.getCellPixels(),
+            manager.setSample_Gene_Data(myNumber, sdRedSlide.getCellPixels(),sdGreenSlide.getCellPixels(),
                     sdRedSlide.getCellHeight(), sdRedSlide.getCellWidth(), 1, params);
-            sdRedSlide.setSeededRegion(engine.getSample_Gene_CenterSpots(myNumber, true));
-            sdGreenSlide.setSeededRegion(engine.getSample_Gene_CenterSpots(myNumber, false));
+            sdRedSlide.setSeededRegion(manager.getSample_Gene_CenterSpots(myNumber, true));
+            sdGreenSlide.setSeededRegion(manager.getSample_Gene_CenterSpots(myNumber, false));
         }
         else if(i == GeneImageAspect.ADAPTIVE_CIRCLE)
         {
@@ -397,10 +384,10 @@ class TabPanel extends JPanel {
             params[0] = 3;
             params[1] = 8;
             params[2] = slidderSeededThreshold.getValue();
-            engine.setSample_Gene_Data(myNumber, sdRedSlide.getCellPixels(),sdGreenSlide.getCellPixels(),
+            manager.setSample_Gene_Data(myNumber, sdRedSlide.getCellPixels(),sdGreenSlide.getCellPixels(),
                     sdRedSlide.getCellHeight(), sdRedSlide.getCellWidth(), 2, params);
-            sdRedSlide.setAdaptiveCircle(engine.getSample_Gene_CenterAndRadius(myNumber));
-            sdGreenSlide.setAdaptiveCircle(engine.getSample_Gene_CenterAndRadius(myNumber));
+            sdRedSlide.setAdaptiveCircle(manager.getSample_Gene_CenterAndRadius(myNumber));
+            sdGreenSlide.setAdaptiveCircle(manager.getSample_Gene_CenterAndRadius(myNumber));
         }
 
         if(i == GeneImageAspect.SEEDED_REGION || i == GeneImageAspect.ADAPTIVE_CIRCLE)
@@ -408,19 +395,19 @@ class TabPanel extends JPanel {
             String flagText = "N/A";
             if(ratioMethod==GeneImageAspect.TOTAL_SIGNAL||ratioMethod==GeneImageAspect.TOTAL_SUBTRACT_BG)
             {
-                textArea_3.setText("Green BG Total: " + df.format(engine.getSample_Gene_GreenBackgroundTotal(myNumber)) +
-                        "\nGreen FG Total: " +  df.format(engine.getSample_Gene_GreenForegroundTotal(myNumber)) +
-                        "\nRed BG Total: " + df.format(engine.getSample_Gene_RedBackgroundTotal(myNumber)) +
-                        "\nRed FG Total: " + df.format(engine.getSample_Gene_RedForegroundTotal(myNumber)));
+                textArea_3.setText("Green BG Total: " + df.format(manager.getSample_Gene_GreenBackgroundTotal(myNumber)) +
+                        "\nGreen FG Total: " +  df.format(manager.getSample_Gene_GreenForegroundTotal(myNumber)) +
+                        "\nRed BG Total: " + df.format(manager.getSample_Gene_RedBackgroundTotal(myNumber)) +
+                        "\nRed FG Total: " + df.format(manager.getSample_Gene_RedForegroundTotal(myNumber)));
             }
             else
             {
-                textArea_3.setText("Green BG Avg: " + df.format(engine.getSample_Gene_GreenBackgroundAvg(myNumber)) +
-                        "\nGreen FG Avg: " + df.format(engine.getSample_Gene_GreenForegroundAvg(myNumber)) +
-                        "\nRed BG Avg: " + df.format(engine.getSample_Gene_RedBackgroundAvg(myNumber)) +
-                        "\nRed FG Avg: " + df.format(engine.getSample_Gene_RedForegroundAvg(myNumber)));
+                textArea_3.setText("Green BG Avg: " + df.format(manager.getSample_Gene_GreenBackgroundAvg(myNumber)) +
+                        "\nGreen FG Avg: " + df.format(manager.getSample_Gene_GreenForegroundAvg(myNumber)) +
+                        "\nRed BG Avg: " + df.format(manager.getSample_Gene_RedBackgroundAvg(myNumber)) +
+                        "\nRed FG Avg: " + df.format(manager.getSample_Gene_RedForegroundAvg(myNumber)));
             }
-            textArea_3.setText(textArea_3.getText() + "\nRatio: " + df.format(engine.getSample_Gene_Ratio(myNumber, ratioMethod)));
+            textArea_3.setText(textArea_3.getText() + "\nRatio: " + df.format(manager.getSample_Gene_Ratio(myNumber, ratioMethod)));
             textArea_3.setText(textArea_3.getText() + "\nFlagging Status: " + flagText);
         }
         else
@@ -428,6 +415,7 @@ class TabPanel extends JPanel {
             textArea_4.setText("Ratio: N/A \nGreen Background: N/A \nGreen Foreground: N/A \nRed Background: N/A \nRed Foreground: N/A");
         }
     }
+    */
 
     public void setGridMode(int i)
     {
@@ -441,7 +429,23 @@ class TabPanel extends JPanel {
 
     public void setSelectedGrid(int grid)
     {
-        engine.setSample_CurrentGrid(myNumber, grid);
+        manager.setSample_CurrentGrid(myNumber, grid);
         imageDisplay.setCurrentGrid(grid);
+    }
+
+    public void removeGrid(int grid)
+    {
+        imageDisplay.removeCurrentGrid();
+        manager.removeSample_Grid(myNumber, grid);
+    }
+
+    public void reSize()
+    {
+        imageDisplay.setBounds(10, 10, (int)(this.getWidth()*(1.0/2.0) - 10), this.getHeight()-20);
+        panel_Grid.setBounds(imageDisplay.getX() + imageDisplay.getWidth(), imageDisplay.getY(),
+                (int)(this.getWidth() - this.getWidth()*(1.0/2.0) - 20), (int)(this.getHeight()*(1.0/2.0) - 10));
+        segment.setBounds(panel_Grid.getX(), panel_Grid.getY() + panel_Grid.getHeight(), panel_Grid.getWidth(),
+                (int)(this.getHeight() - this.getHeight()*(1.0/2.0) - 20));
+        imageDisplay.reSize((int)(this.getWidth()*(1.0/2.0) - 10), this.getHeight()-20);
     }
 }

@@ -24,10 +24,10 @@
 
 package application.gui;
 
+import application.engine.GuiManager;
 import ij.ImagePlus;
 import ij.gui.ImageCanvas;
 import application.GeneImageAspect;
-import application.internal.Engine;
 
 import javax.swing.*;
 import java.awt.*;
@@ -42,7 +42,7 @@ import java.awt.image.PixelGrabber;
  */
 public class SegmentDisplay extends JPanel {
 
-    private Engine engine;
+    private GuiManager manager;
 
     private Image im, original;
     private double zoomed=1.0;
@@ -73,19 +73,19 @@ public class SegmentDisplay extends JPanel {
      * Constructs the display for the given image and grid manager
      * @param isGreen Whether the image is green or red
      */
-    public SegmentDisplay(int number, boolean isGreen, Engine engine) {
-        this.engine = engine;
+    public SegmentDisplay(int number, boolean isGreen, GuiManager manager) {
+        this.manager = manager;
         myNumber = number;
 
-        engine.setSample_CurrentGrid(myNumber, 0);
-        engine.setSample_CurrentSpot(myNumber, 0);
+        manager.setSample_CurrentGrid(myNumber, 0);
+        manager.setSample_CurrentSpot(myNumber, 0);
         if (isGreen)
         {
-            ip = engine.getSample_GreenImagePlus(myNumber);
+            ip = manager.getSample_GreenImagePlus(myNumber);
         }
         else
         {
-            ip = engine.getSample_RedImagePlus(myNumber);
+            ip = manager.getSample_RedImagePlus(myNumber);
         }
 
         RawPixels = new int[ip.getHeight()][ip.getWidth()];
@@ -174,7 +174,7 @@ public class SegmentDisplay extends JPanel {
     //draws the grid around the spot
     private void drawCell(Graphics g) {
         g.setColor(Color.yellow);
-        Polygon p = engine.getSample_Grid_Polygon_Outline(myNumber, engine.getSample_CurrentGridNum(myNumber));
+        Polygon p = manager.getSample_Grid_Polygon_Outline(myNumber, manager.getSample_CurrentGridNum(myNumber));
         Polygon q = new Polygon();
         if(p!=null) {
             for(int j=0; j<p.xpoints.length; j++){
@@ -183,8 +183,8 @@ public class SegmentDisplay extends JPanel {
                 q.xpoints[j]=(int)((screenX(p.xpoints[j]))/getZoom());
                 q.ypoints[j]=(int)((screenY(p.ypoints[j]))/getZoom());
             }
-            engine.setSample_Grid_Spots(myNumber, engine.getSample_CurrentGridNum(myNumber), q);
-            setCell(engine.getSample_Grid_CurrentSpot(myNumber, engine.getSample_CurrentGridNum(myNumber)));
+            manager.setSample_Grid_Spots(myNumber, manager.getSample_CurrentGridNum(myNumber), q);
+            setCell(manager.getSample_Grid_CurrentSpot(myNumber, manager.getSample_CurrentGridNum(myNumber)));
             g.drawPolygon(cell);
         }
         g.setColor(Color.white);
@@ -289,14 +289,14 @@ public class SegmentDisplay extends JPanel {
      * @param grid grid number
      */
     public void setSpots(int grid){
-        Polygon p = engine.getSample_Grid_Polygon_Outline(myNumber, grid);
+        Polygon p = manager.getSample_Grid_Polygon_Outline(myNumber, grid);
         Polygon q = new Polygon();
         if(p!=null) {
             for(int j=0; j<p.xpoints.length; j++){
                 q.xpoints[j]=(int)((screenX(p.xpoints[j]))/getZoom());
                 q.ypoints[j]=(int)((screenY(p.ypoints[j]))/getZoom());
             }
-            engine.setSample_Grid_Spots(myNumber, grid, q);
+            manager.setSample_Grid_Spots(myNumber, grid, q);
         }
     }
 
@@ -314,7 +314,7 @@ public class SegmentDisplay extends JPanel {
      * @return width of the current cell
      */
     public int getCellWidth(){
-        Polygon p = engine.getSample_Grid_CurrentSpot(myNumber, engine.getSample_CurrentGridNum(myNumber));
+        Polygon p = manager.getSample_Grid_CurrentSpot(myNumber, manager.getSample_CurrentGridNum(myNumber));
         return Math.abs(p.xpoints[1]-p.xpoints[0]);
     }
 
@@ -323,7 +323,7 @@ public class SegmentDisplay extends JPanel {
      * @return height of the current cell
      */
     public int getCellHeight(){
-        Polygon p = engine.getSample_Grid_CurrentSpot(myNumber, engine.getSample_CurrentGridNum(myNumber));
+        Polygon p = manager.getSample_Grid_CurrentSpot(myNumber, manager.getSample_CurrentGridNum(myNumber));
         return Math.abs(p.ypoints[2]-p.ypoints[0]);
     }
 
@@ -332,7 +332,7 @@ public class SegmentDisplay extends JPanel {
      * @return array of pixels in the current cell
      */
     public int[] getCellPixels(){
-        Polygon p = engine.getSample_Grid_CurrentSpot(myNumber, engine.getSample_CurrentGridNum(myNumber));
+        Polygon p = manager.getSample_Grid_CurrentSpot(myNumber, manager.getSample_CurrentGridNum(myNumber));
         if(p!=null){
             int w = Math.abs(p.xpoints[1]-p.xpoints[0]);
             int h = Math.abs(p.ypoints[2]-p.ypoints[0]);
@@ -372,7 +372,7 @@ public class SegmentDisplay extends JPanel {
      * @return array of pixels in the specified cell
      */
     public int[] getCellPixels(int grid, int spotNum){
-        Polygon p = engine.getSample_Grid_Spot(myNumber, grid, spotNum);
+        Polygon p = manager.getSample_Grid_Spot(myNumber, grid, spotNum);
         int w = Math.abs(p.xpoints[1]-p.xpoints[0]);
         int h = Math.abs(p.ypoints[2]-p.ypoints[0]);
         int[] pixels = new int[w*h];
@@ -405,7 +405,7 @@ public class SegmentDisplay extends JPanel {
      * @return width of the current cell
      */
     public int getCellWidth(int grid, int spotNum){
-        Polygon p = engine.getSample_Grid_Spot(myNumber, grid, spotNum);
+        Polygon p = manager.getSample_Grid_Spot(myNumber, grid, spotNum);
         return Math.abs(p.xpoints[1]-p.xpoints[0]);
     }
 
@@ -416,7 +416,7 @@ public class SegmentDisplay extends JPanel {
      * @return height of the current cell
      */
     public int getCellHeight(int grid, int spotNum){
-        Polygon p = engine.getSample_Grid_Spot(myNumber, grid, spotNum);
+        Polygon p = manager.getSample_Grid_Spot(myNumber, grid, spotNum);
         return Math.abs(p.ypoints[2]-p.ypoints[0]);
     }
 

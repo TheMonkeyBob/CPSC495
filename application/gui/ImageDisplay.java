@@ -1,6 +1,6 @@
 package application.gui;
 
-import application.internal.Engine;
+import application.engine.GuiManager;
 
 import javax.swing.*;
 import java.awt.*;
@@ -18,10 +18,9 @@ import java.awt.image.PixelGrabber;
 public class ImageDisplay extends JScrollPane
 {
     private int myNumber;
-    private Engine engine;
+    private GuiManager manager;
     private ImageDisplayPanel imageDisplayPanel;
-    private TabPanel parent_panel;
-
+    private ImageDisplayTruePanel parent_panel;
     private boolean clicked = false;
 
     private int mode = SharedData.GRIDMODE_NORMAL;
@@ -31,10 +30,10 @@ public class ImageDisplay extends JScrollPane
     private int y_last = 0;
     private int deadzone = 10;
 
-    public ImageDisplay(int num, Engine engine, TabPanel parent)
+    public ImageDisplay(int num, GuiManager manager, ImageDisplayTruePanel parent)
     {
         myNumber = num;
-        this.engine = engine;
+        this.manager = manager;
         parent_panel = parent;
         setup();
     }
@@ -76,7 +75,8 @@ public class ImageDisplay extends JScrollPane
             }
         };
 
-        imageDisplayPanel = new ImageDisplayPanel(engine, buildImage(), myNumber);
+        image = buildImage();
+        imageDisplayPanel = new ImageDisplayPanel(manager, image, myNumber);
         imageDisplayPanel.getCanvas().addMouseListener(ma);
         imageDisplayPanel.getCanvas().addMouseMotionListener(ma);
         imageDisplayPanel.getCanvas().addMouseWheelListener(ma);
@@ -96,11 +96,12 @@ public class ImageDisplay extends JScrollPane
             viewport.setViewPosition(new Point(Integer.MAX_VALUE, 0));
         }
     }
+    private Image image;
 
     private Image buildImage()
     {
-        Image green = engine.getSample_GreenImage(myNumber);
-        Image red = engine.getSample_RedImage(myNumber);
+        Image green = manager.getSample_GreenImage(myNumber);
+        Image red = manager.getSample_RedImage(myNumber);
 
         Dimension redDim = new Dimension(red.getWidth(null), red.getHeight(null));
         Dimension greenDim = new Dimension(green.getWidth(null), green.getHeight(null));
@@ -253,16 +254,16 @@ public class ImageDisplay extends JScrollPane
         switch (mode)
         {
             case SharedData.GRIDMODE_MOVE:
-                engine.setSample_Grid_MoveTo(myNumber, current_gird_num, current_master.xpoints[0],
+                manager.setSample_Grid_MoveTo(myNumber, current_gird_num, current_master.xpoints[0],
                         current_master.ypoints[0]);
                 refreshCurrentGrids();
                 break;
             case SharedData.GRIDMODE_ROTATE:
-                engine.setSample_Grid_RotateTo(myNumber, current_gird_num, current_angle);
+                manager.setSample_Grid_RotateTo(myNumber, current_gird_num, current_angle);
                 refreshCurrentGrids();
                 break;
             case SharedData.GRIDMODE_RESIZE:
-                engine.setSample_Grid_ResizeTo(myNumber, current_gird_num, current_master.ypoints[3] -
+                manager.setSample_Grid_ResizeTo(myNumber, current_gird_num, current_master.ypoints[3] -
                         current_master.ypoints[0], current_master.xpoints[1] - current_master.xpoints[0]);
                 refreshCurrentGrids();
                 break;
@@ -284,7 +285,7 @@ public class ImageDisplay extends JScrollPane
                 int y_diff = yCoordinate(e.getY()) - current_master.ypoints[0];
                 current_master.xpoints[0] += x_diff;
                 current_master.ypoints[0] += y_diff;
-                engine.setSample_Grid_MoveTo(myNumber, current_gird_num, current_master.xpoints[0],
+                manager.setSample_Grid_MoveTo(myNumber, current_gird_num, current_master.xpoints[0],
                         current_master.ypoints[0]);
                 refreshCurrentGrids();
                 break;
@@ -356,13 +357,13 @@ public class ImageDisplay extends JScrollPane
                     AffineTransform aTransform = new AffineTransform();
                     if (yCoordinate(e.getY()) > y_origin)
                     {
-                        current_angle += (yCoordinate(e.getY()) - y_origin - deadzone) * 0.001;
+                        current_angle = working_angle + (yCoordinate(e.getY()) - y_origin - deadzone) * 0.001;
                         aTransform.setToRotation((yCoordinate(e.getY()) - y_origin - deadzone) * 0.001,
                                 working_master.xpoints[0], working_master.ypoints[0]);
                     }
                     else
                     {
-                        current_angle += (yCoordinate(e.getY()) - y_origin + deadzone) * 0.001;
+                        current_angle = working_angle + (yCoordinate(e.getY()) - y_origin + deadzone) * 0.001;
                         aTransform.setToRotation((yCoordinate(e.getY()) - y_origin + deadzone) * 0.001,
                                 working_master.xpoints[0], working_master.ypoints[0]);
                     }
@@ -491,12 +492,12 @@ public class ImageDisplay extends JScrollPane
                     aTransform.setToRotation(current_angle, working_outer.xpoints[0], working_outer.ypoints[0]);
 
                     start = new Point2D.Double(current_outer_width + working_outer.xpoints[0],
-                            working_outer.ypoints[1]);
+                            working_outer.ypoints[0]);
                     aTransform.transform(start, done);
                     current_outer.xpoints[1] = (int)Math.round(done.getX());
                     current_outer.ypoints[1] = (int)Math.round(done.getY());
 
-                    start = new Point2D.Double(working_outer.xpoints[3], current_outer_height +
+                    start = new Point2D.Double(working_outer.xpoints[0], current_outer_height +
                             working_outer.ypoints[0]);
                     aTransform.transform(start, done);
                     current_outer.xpoints[3] = (int)Math.round(done.getX());
@@ -609,14 +610,14 @@ public class ImageDisplay extends JScrollPane
 
     public void addGrid()
     {
-        if (engine.getSample_GridCount(myNumber) > gridCount)
+        if (manager.getSample_GridCount(myNumber) > gridCount)
         {
-            current_angle = engine.getSample_Grid_Angle(myNumber, gridCount);
-            current_master = engine.getSample_Grid_Polygon_Master(myNumber, gridCount);
-            current_base = engine.getSample_Grid_Polygon_Base(myNumber, gridCount);
-            current_outer = engine.getSample_Grid_Polygon_Outline(myNumber, gridCount);
-            current_vert = engine.getSample_Grid_Polygon_VerticalLines(myNumber, gridCount);
-            current_hori = engine.getSample_Grid_Polygon_HorizontalLines(myNumber, gridCount);
+            current_angle = manager.getSample_Grid_Angle(myNumber, gridCount);
+            current_master = manager.getSample_Grid_Polygon_Master(myNumber, gridCount);
+            current_base = manager.getSample_Grid_Polygon_Base(myNumber, gridCount);
+            current_outer = manager.getSample_Grid_Polygon_Outline(myNumber, gridCount);
+            current_vert = manager.getSample_Grid_Polygon_VerticalLines(myNumber, gridCount);
+            current_hori = manager.getSample_Grid_Polygon_HorizontalLines(myNumber, gridCount);
             imageDisplayPanel.addGrid(current_angle, current_master, current_base, current_outer, current_vert,
                     current_hori);
             current_gird_num = gridCount;
@@ -626,12 +627,12 @@ public class ImageDisplay extends JScrollPane
 
     private void refreshCurrentGrids()
     {
-        current_angle = engine.getSample_Grid_Angle(myNumber, current_gird_num);
-        current_master = engine.getSample_Grid_Polygon_Master(myNumber, current_gird_num);
-        current_base = engine.getSample_Grid_Polygon_Base(myNumber, current_gird_num);
-        current_outer = engine.getSample_Grid_Polygon_Outline(myNumber, current_gird_num);
-        current_vert = engine.getSample_Grid_Polygon_VerticalLines(myNumber, current_gird_num);
-        current_hori = engine.getSample_Grid_Polygon_HorizontalLines(myNumber, current_gird_num);
+        current_angle = manager.getSample_Grid_Angle(myNumber, current_gird_num);
+        current_master = manager.getSample_Grid_Polygon_Master(myNumber, current_gird_num);
+        current_base = manager.getSample_Grid_Polygon_Base(myNumber, current_gird_num);
+        current_outer = manager.getSample_Grid_Polygon_Outline(myNumber, current_gird_num);
+        current_vert = manager.getSample_Grid_Polygon_VerticalLines(myNumber, current_gird_num);
+        current_hori = manager.getSample_Grid_Polygon_HorizontalLines(myNumber, current_gird_num);
         imageDisplayPanel.setNewGridDimensions(current_gird_num, current_angle, current_master, current_base,
                 current_outer, current_vert, current_hori);
     }
@@ -668,5 +669,59 @@ public class ImageDisplay extends JScrollPane
         current_gird_num = grid;
         imageDisplayPanel.setCurrentGridNumber(grid);
         repaint();
+    }
+
+    public void removeCurrentGrid()
+    {
+        imageDisplayPanel.removeCurrentGrid();
+        gridCount--;
+    }
+
+    public void setMagnification(double zoom)
+    {
+        imageDisplayPanel.setMagnification(zoom);
+    }
+
+    public void changeContrast(int val)
+    {
+        Thread thread = new Thread(){
+            public void run(){
+                setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+                double contrast = (double)val;
+                contrast/=100;
+                int w = image.getWidth(null);
+                int h = image.getHeight(null);
+                int[] pixels = new int[w*h];
+
+
+                PixelGrabber pg = new PixelGrabber(image, 0,0,w,h,pixels,0,w);
+
+                try{
+                    pg.grabPixels();
+
+                }catch(Exception e3){System.out.print("Error");}
+
+                for(int i=0; i<pixels.length; i++){
+                    int p = pixels[i];
+
+                    int a = (p >> 24) & 0xFF;
+                    int r = (p >> 16) & 0xFF;
+                    int b = 0;
+                    int g = (p >>  8) & 0xFF;
+                    r=Math.round((float)(r*contrast));
+                    //b=Math.round((float)(b*contrast));
+                    g=Math.round((float)(g*contrast));
+                    if(r>255) r=255;
+                    //if(b>255) b=255;
+                    if(g>255) g=255;
+
+                    pixels[i] = (a << 24 | r << 16 | g << 8 | b);
+                }
+                imageDisplayPanel.ip.setImage(createImage(new MemoryImageSource(w,h,pixels,0,w)));
+                imageDisplayPanel.repaint();
+                setCursor(Cursor.getDefaultCursor());
+            }
+        };
+        thread.start();
     }
 }
