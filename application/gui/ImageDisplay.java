@@ -1,6 +1,35 @@
+/*
+ *   MAGIC Tool, A microarray image and data analysis program
+ *   Copyright (C) 2003  Laurie Heyer
+ *
+ *   This program is free software; you can redistribute it and/or
+ *   modify it under the terms of the GNU General Public License
+ *   as published by the Free Software Foundation; either version 2
+ *   of the License, or (at your option) any later version.
+ *
+ *   This program is distributed in the hope that it will be useful,
+ *   but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *   GNU General Public License for more details.
+ *
+ *   You should have received a copy of the GNU General Public License
+ *   along with this program; if not, write to the Free Software
+ *   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+ *
+ *   Contact Information:
+ *   Laurie Heyer
+ *   Dept. of Mathematics
+ *   PO Box 6959
+ */
+/*
+ * Modified by Lukas Pihl
+ */
+
 package application.gui;
 
 import application.engine.GuiManager;
+import ij.ImagePlus;
+import ij.gui.ImageCanvas;
 
 import javax.swing.*;
 import java.awt.*;
@@ -11,35 +40,59 @@ import java.awt.geom.AffineTransform;
 import java.awt.geom.Point2D;
 import java.awt.image.MemoryImageSource;
 import java.awt.image.PixelGrabber;
+import java.util.ArrayList;
 
 /**
- * Created by Lukas Pihl
+ * ImageDisplayPanel is a JPanel which displays a microarray image.
  */
-public class ImageDisplay extends JScrollPane
-{
-    private int myNumber;
-    private GuiManager manager;
-    private ImageDisplayPanel imageDisplayPanel;
-    private ImageDisplayTruePanel parent_panel;
-    private boolean clicked = false;
+public class ImageDisplay extends JPanel {
 
+    private GuiManager manager;
+    private int myNumber;
+
+    private double zoomed=1.0; //magnification
+    private BorderLayout borderLayout1 = new BorderLayout();
+    private BorderLayout borderLayout2 = new BorderLayout();
     private int mode = SharedData.GRIDMODE_NORMAL;
     private int x_origin = 0;
     private int y_origin = 0;
     private int x_last = 0;
     private int y_last = 0;
     private int deadzone = 10;
+    private boolean clicked = false;
+    private JPanel panel_image = new JPanel();
 
-    public ImageDisplay(int num, GuiManager manager, ImageDisplayTruePanel parent)
+    private Image im; //original image
+    /**microarray image displayed in the panel*/
+    protected ImagePlus ip;
+    /**canvas displaying microarray image*/
+    protected ImageCanvas ic;
+    /**Currently selected grid**/
+    private int current_grid_number;
+
+    public ImageDisplay(GuiManager manager, int number)
     {
-        myNumber = num;
+
         this.manager = manager;
-        parent_panel = parent;
-        setup();
-    }
+        this.myNumber = number;
+        this.im = buildImage();
 
-    private void setup()
-    {
+        ip = new ImagePlus("Overlayed",im);
+        ic = new ImageCanvas(ip){
+            public void paintComponent(Graphics g){
+                super.paintComponent(g);
+                g.setColor(Color.white);
+                drawGrids(g);
+            }
+        };
+
+        try {
+            jbInit();
+        }
+        catch(Exception e) {
+            e.printStackTrace();
+        }
+
         MouseAdapter ma = new MouseAdapter()
         {
             @Override
@@ -75,28 +128,220 @@ public class ImageDisplay extends JScrollPane
             }
         };
 
-        image = buildImage();
-        imageDisplayPanel = new ImageDisplayPanel(manager, image, myNumber);
-        imageDisplayPanel.getCanvas().addMouseListener(ma);
-        imageDisplayPanel.getCanvas().addMouseMotionListener(ma);
-        imageDisplayPanel.getCanvas().addMouseWheelListener(ma);
+        this.getCanvas().addMouseListener(ma);
+        this.getCanvas().addMouseMotionListener(ma);
+        this.getCanvas().addMouseWheelListener(ma);
+    }
 
-        setLayout(new ScrollPaneLayout.UIResource());
-        setVerticalScrollBarPolicy(VERTICAL_SCROLLBAR_ALWAYS);
-        setHorizontalScrollBarPolicy(HORIZONTAL_SCROLLBAR_ALWAYS);
-        setViewport(createViewport());
-        setVerticalScrollBar(createVerticalScrollBar());
-        setHorizontalScrollBar(createHorizontalScrollBar());
-        if (imageDisplayPanel != null) {
-            setViewportView(imageDisplayPanel);
+    /**
+     * Paints the panel on the specified graphics
+     * @param g graphics to paint the panel on
+     */
+    public void paintComponent(Graphics g) {
+        g.setColor(Color.white);
+        g.fillRect(0,0,this.getHeight(),this.getWidth());
+        g.setColor(Color.white);
+        super.paintComponent(g);
+
+    }
+
+    /**
+     * magnifies the zoom by the given factor
+     * @param zoomFactor factor to zoom by
+     */
+    public void zoom(double zoomFactor) {
+        zoomed = zoomed*zoomFactor;
+        ic.setMagnification(zoomed);
+        ic.setImageUpdated();
+        this.setPreferredSize(new Dimension(Math.round((float)(ip.getWidth()*zoomed)),Math.round((float)(ip.getHeight()*zoomed))));
+        ic.repaint();
+        this.repaint();
+    }
+
+    /**
+     * sets the magnification level
+     * @param magnification magnification level
+     */
+    public void setMagnification(double magnification)
+    {
+        ic.setMagnification(magnification);
+        zoomed = magnification;
+        ic.setImageUpdated();
+        this.setPreferredSize(new Dimension(Math.round((float)(ip.getWidth()*zoomed)),Math.round((float)(ip.getHeight()*zoomed))));
+        ic.repaint();
+        this.repaint();
+    }
+
+    /**
+     * gets the magnification
+     * @return magnification level
+     */
+    public double getZoom(){
+        return zoomed;
+    }
+
+    /**
+     * gets the canvas the microarray image is painted on
+     * @return canvas the microarray image is painted on
+     */
+    public ImageCanvas getCanvas() {
+        return ic;
+    }
+
+    /**
+     * gets the screen x-coordinate from a canvas x-coordinate
+     * @param canvasX canvas x-coordinate
+     * @return screen x-coordinate
+     */
+    public int screenX(int canvasX) {
+        return (Math.round((float)this.getZoom()*(canvasX-this.ic.getSrcRect().x)));
+    }
+
+    /**
+     * gets the screen y-coordinate from a canvas y-coordinate
+     * @param canvasY canvas y-coordinate
+     * @return screen y-coordinate
+     */
+    public int screenY(int canvasY) {
+        return (Math.round((float)this.getZoom()*(canvasY-this.ic.getSrcRect().y)));
+    }
+
+    private void jbInit() throws Exception {
+        this.addMouseListener(new MouseAdapter() {
+            public void mouseEntered(MouseEvent e)
+            {
+                this_mouseEntered(e);
+            }
+        });
+        this.setBackground(Color.white);
+        this.setLayout(borderLayout2);
+        ic.setSrcRectPos(0,0);
+        this.add(ic,BorderLayout.CENTER);
+    }
+
+    //sets the cursor when mouse enter the panel
+    private void this_mouseEntered(MouseEvent e) {
+        ic.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
+    }
+
+    /**
+     * Draws a blue 2-px line on the panel from (x1,y1) to (x2,y2) - coordinates are on the <b>image</b>
+     * @param x1 first x-coordinate on the image
+     * @param y1 first y-coordinate on the image
+     * @param x2 second x-coordinate on the image
+     * @param y2 second y-coordinate on the image
+     */
+    public void drawLine(int x1, int y1, int x2, int y2)
+    {
+        Graphics g = ic.getGraphics();
+        //super.paintComponent(g);
+        //paintComponent(g);
+        Graphics2D g2d = (Graphics2D)g;
+        g2d.setPaint(Color.blue);
+        g2d.setStroke(new BasicStroke(2));
+        g2d.drawLine(screenX(x1), screenY(y1), screenX(x2), screenY(y2));
+    }
+
+    //draws the grids on the panel
+    private void drawGrids(Graphics g) {
+        for(int i = 0; i<gridCount; i++){
+            Polygon p = basepoly_list.get(i);
+            if(p!=null ){
+                Polygon newP = outerpoly_list.get(i);
+                for(int j=0; j<p.xpoints.length; j++){
+                    p.xpoints[j]=screenX(p.xpoints[j]);
+                    p.ypoints[j]=screenY(p.ypoints[j]);
+                    newP.xpoints[j]=screenX(newP.xpoints[j]);
+                    newP.ypoints[j]=screenY(newP.ypoints[j]);
+                }
+                Polygon[] vertLines = vertlines_list.get(i);
+                Polygon[] horiLines = horilines_list.get(i);
+
+                if(i == current_grid_number) {
+                    //Current Grid. Draw bounding rectangles.
+                    g.setColor(Color.yellow);
+                    g.drawPolygon(newP);
+                    for(int v = 0;v<vertLines.length;v++) {
+                        g.drawPolygon(vertLines[v]);
+                    }
+                    for(int h = 0;h<horiLines.length;h++) {
+                        g.drawPolygon(horiLines[h]);
+                    }
+                    g.setColor(Color.LIGHT_GRAY);
+                    //int h = GridMoverAdapter.height/4;
+
+                    //GridMoverAdapter.updateRectangles();
+                    //for(int z=0;z<4;z++) g.fillOval(screenX(GridMoverAdapter.vertices[z].x)-h/2, screenY(GridMoverAdapter.vertices[z].y)-h/2, h, h);
+                }else{
+                    g.setColor(Color.white);
+                    //Draw other grids.
+                    g.drawPolygon(newP);
+                    for(int v = 0;v<vertLines.length;v++) {
+                        g.drawPolygon(vertLines[v]);
+                    }
+                    for(int h = 0;h<horiLines.length;h++) {
+                        g.drawPolygon(horiLines[h]);
+                    }
+                }
+            }
         }
-        updateUI();
+        //Draw the current grids little boxes so that we know where to click.
+    }
 
-        if (!this.getComponentOrientation().isLeftToRight()) {
-            viewport.setViewPosition(new Point(Integer.MAX_VALUE, 0));
+    //This method will connec the first two lines.
+    private void drawLines(Graphics g, int x1, int y1, int x2, int y2){
+        for(int i = 0; i< manager.getSample_GridCount(myNumber); i++){
+            //Grid grid = manager.getGrid(i);
+            Polygon p = new Polygon();
+
         }
     }
-    private Image image;
+
+    public void setCurrentGrid(int number)
+    {
+        current_grid_number = number;
+        repaint();
+    }
+
+    private ArrayList<Double> angle_list = new ArrayList<>();
+    private ArrayList<Polygon> masterpoly_list = new ArrayList<>();
+    private ArrayList<Polygon> basepoly_list = new ArrayList<>();
+    private ArrayList<Polygon> outerpoly_list = new ArrayList<>();
+    private ArrayList<Polygon[]> vertlines_list = new ArrayList<>();
+    private ArrayList<Polygon[]> horilines_list = new ArrayList<>();
+
+    public Object[] getGrid(int i)
+    {
+        Object[] list = new Object[]{angle_list.get(i), masterpoly_list.get(i), basepoly_list.get(i),
+                outerpoly_list.get(i), vertlines_list.get(i), horilines_list.get(i)};
+        return list;
+    }
+
+    public void setNewGridDimensions(int grid, double angle, Polygon master, Polygon base, Polygon outer, Polygon[] vert, Polygon[] hori)
+    {
+        angle_list.set(grid, angle);
+        masterpoly_list.set(grid, master);
+        basepoly_list.set(grid, base);
+        outerpoly_list.set(grid, outer);
+        vertlines_list.set(grid, vert);
+        horilines_list.set(grid, hori);
+        repaint();
+    }
+
+    public void removeCurrentGrid()
+    {
+        angle_list.remove(current_grid_number);
+        masterpoly_list.remove(current_grid_number);
+        basepoly_list.remove(current_grid_number);
+        outerpoly_list.remove(current_grid_number);
+        vertlines_list.remove(current_grid_number);
+        horilines_list.remove(current_grid_number);
+        if (current_grid_number > basepoly_list.size() - 1)
+        {
+            current_grid_number = basepoly_list.size() - 1;
+        }
+        gridCount--;
+    }
 
     private Image buildImage()
     {
@@ -146,8 +391,7 @@ public class ImageDisplay extends JScrollPane
      */
     public int xCoordinate(int ex)
     {
-        return ((imageDisplayPanel.getCanvas().getSrcRect().x
-                + Math.round((float) ((ex) / imageDisplayPanel.getZoom()))));
+        return ((this.getCanvas().getSrcRect().x + Math.round((float) ((ex) / this.getZoom()))));
     }
 
     /**
@@ -159,8 +403,7 @@ public class ImageDisplay extends JScrollPane
      */
     public int yCoordinate(int ey)
     {
-        return ((imageDisplayPanel.getCanvas().getSrcRect().y
-                + Math.round((float) ((ey) / imageDisplayPanel.getZoom()))));
+        return ((this.getCanvas().getSrcRect().y + Math.round((float) ((ey) / this.getZoom()))));
     }
 
     private void this_mousePressed(MouseEvent e)
@@ -168,73 +411,73 @@ public class ImageDisplay extends JScrollPane
         switch (mode)
         {
             case SharedData.GRIDMODE_ROTATE:
-                working_angle = current_angle;
-                working_master = new Polygon();
-                for (int i = 0; i < current_master.xpoints.length; i++)
+                working_angle.set(current_grid_number, angle_list.get(current_grid_number));
+                working_master.set(current_grid_number, new Polygon());
+                for (int i = 0; i < masterpoly_list.get(current_grid_number).xpoints.length; i++)
                 {
-                    working_master.addPoint(current_master.xpoints[i], current_master.ypoints[i]);
+                    working_master.get(current_grid_number).addPoint(masterpoly_list.get(current_grid_number).xpoints[i], masterpoly_list.get(current_grid_number).ypoints[i]);
                 }
-                working_outer = new Polygon();
-                for (int i = 0; i < current_outer.xpoints.length; i++)
+                working_outer.set(current_grid_number, new Polygon());
+                for (int i = 0; i < outerpoly_list.get(current_grid_number).xpoints.length; i++)
                 {
-                    working_outer.addPoint(current_outer.xpoints[i], current_outer.ypoints[i]);
+                    working_outer.get(current_grid_number).addPoint(outerpoly_list.get(current_grid_number).xpoints[i], outerpoly_list.get(current_grid_number).ypoints[i]);
                 }
-                working_vert = new Polygon[current_vert.length];
-                for (int i = 0; i < current_vert.length; i++)
+                working_vert.set(current_grid_number, new Polygon[vertlines_list.get(current_grid_number).length]);
+                for (int i = 0; i < vertlines_list.get(current_grid_number).length; i++)
                 {
-                    working_vert[i] = new Polygon();
-                    for (int j = 0; j < current_vert[i].xpoints.length; j++)
+                    working_vert.get(current_grid_number)[i] = new Polygon();
+                    for (int j = 0; j < vertlines_list.get(current_grid_number)[i].xpoints.length; j++)
                     {
-                        working_vert[i].addPoint(current_vert[i].xpoints[j], current_vert[i].ypoints[j]);
+                        working_vert.get(current_grid_number)[i].addPoint(vertlines_list.get(current_grid_number)[i].xpoints[j], vertlines_list.get(current_grid_number)[i].ypoints[j]);
                     }
                 }
-                working_hori = new Polygon[current_hori.length];
-                for (int i = 0; i < current_hori.length; i++)
+                working_hori.set(current_grid_number, new Polygon[horilines_list.get(current_grid_number).length]);
+                for (int i = 0; i < horilines_list.get(current_grid_number).length; i++)
                 {
-                    working_hori[i] = new Polygon();
-                    for (int j = 0; j < current_hori[i].xpoints.length; j++)
+                    working_hori.get(current_grid_number)[i] = new Polygon();
+                    for (int j = 0; j < horilines_list.get(current_grid_number)[i].xpoints.length; j++)
                     {
-                        working_hori[i].addPoint(current_hori[i].xpoints[j], current_hori[i].ypoints[j]);
+                        working_hori.get(current_grid_number)[i].addPoint(horilines_list.get(current_grid_number)[i].xpoints[j], horilines_list.get(current_grid_number)[i].ypoints[j]);
                     }
                 }
                 break;
             case SharedData.GRIDMODE_RESIZE:
-                working_master = new Polygon();
-                for (int i = 0; i < current_master.xpoints.length; i++)
+                working_master.set(current_grid_number, new Polygon());
+                for (int i = 0; i < masterpoly_list.get(current_grid_number).xpoints.length; i++)
                 {
-                    working_master.addPoint(current_master.xpoints[i], current_master.ypoints[i]);
+                    working_master.get(current_grid_number).addPoint(masterpoly_list.get(current_grid_number).xpoints[i], masterpoly_list.get(current_grid_number).ypoints[i]);
                 }
-                working_outer = new Polygon();
-                for (int i = 0; i < current_outer.xpoints.length; i++)
+                working_outer.set(current_grid_number, new Polygon());
+                for (int i = 0; i < outerpoly_list.get(current_grid_number).xpoints.length; i++)
                 {
-                    working_outer.addPoint(current_outer.xpoints[i], current_outer.ypoints[i]);
+                    working_outer.get(current_grid_number).addPoint(outerpoly_list.get(current_grid_number).xpoints[i], outerpoly_list.get(current_grid_number).ypoints[i]);
                 }
-                working_vert = new Polygon[current_vert.length];
-                for (int i = 0; i < current_vert.length; i++)
+                working_vert.set(current_grid_number, new Polygon[vertlines_list.get(current_grid_number).length]);
+                for (int i = 0; i < vertlines_list.get(current_grid_number).length; i++)
                 {
-                    working_vert[i] = new Polygon();
-                    for (int j = 0; j < current_vert[i].xpoints.length; j++)
+                    working_vert.get(current_grid_number)[i] = new Polygon();
+                    for (int j = 0; j < vertlines_list.get(current_grid_number)[i].xpoints.length; j++)
                     {
-                        working_vert[i].addPoint(current_vert[i].xpoints[j], current_vert[i].ypoints[j]);
+                        working_vert.get(current_grid_number)[i].addPoint(vertlines_list.get(current_grid_number)[i].xpoints[j], vertlines_list.get(current_grid_number)[i].ypoints[j]);
                     }
                 }
-                working_hori = new Polygon[current_hori.length];
-                for (int i = 0; i < current_hori.length; i++)
+                working_hori.set(current_grid_number, new Polygon[horilines_list.get(current_grid_number).length]);
+                for (int i = 0; i < horilines_list.get(current_grid_number).length; i++)
                 {
-                    working_hori[i] = new Polygon();
-                    for (int j = 0; j < current_hori[i].xpoints.length; j++)
+                    working_hori.get(current_grid_number)[i] = new Polygon();
+                    for (int j = 0; j < horilines_list.get(current_grid_number)[i].xpoints.length; j++)
                     {
-                        working_hori[i].addPoint(current_hori[i].xpoints[j], current_hori[i].ypoints[j]);
+                        working_hori.get(current_grid_number)[i].addPoint(horilines_list.get(current_grid_number)[i].xpoints[j], horilines_list.get(current_grid_number)[i].ypoints[j]);
                     }
                 }
-                long dx = Math.abs((long)(working_outer.xpoints[3] - working_outer.xpoints[0]));
-                long dy = Math.abs((long)(working_outer.ypoints[3] - working_outer.ypoints[0]));
+                long dx = Math.abs((long)(working_outer.get(current_grid_number).xpoints[3] - working_outer.get(current_grid_number).xpoints[0]));
+                long dy = Math.abs((long)(working_outer.get(current_grid_number).ypoints[3] - working_outer.get(current_grid_number).ypoints[0]));
                 double d2 = dx * dx + dy * dy;
                 working_outer_height = (int)Math.round(Math.sqrt(d2));
                 current_outer_height = working_outer_height;
 
-                dx = Math.abs((long)(working_outer.xpoints[1] - working_outer.xpoints[0]));
-                dy = Math.abs((long)(working_outer.ypoints[1] - working_outer.ypoints[0]));
+                dx = Math.abs((long)(working_outer.get(current_grid_number).xpoints[1] - working_outer.get(current_grid_number).xpoints[0]));
+                dy = Math.abs((long)(working_outer.get(current_grid_number).ypoints[1] - working_outer.get(current_grid_number).ypoints[0]));
                 d2 = dx * dx + dy * dy;
                 working_outer_width = (int)Math.round(Math.sqrt(d2));
                 current_outer_width = working_outer_width;
@@ -254,17 +497,17 @@ public class ImageDisplay extends JScrollPane
         switch (mode)
         {
             case SharedData.GRIDMODE_MOVE:
-                manager.setSample_Grid_MoveTo(myNumber, current_gird_num, current_master.xpoints[0],
-                        current_master.ypoints[0]);
+                manager.setSample_Grid_MoveTo(myNumber, current_grid_number, masterpoly_list.get(current_grid_number).xpoints[0],
+                        masterpoly_list.get(current_grid_number).ypoints[0]);
                 refreshCurrentGrids();
                 break;
             case SharedData.GRIDMODE_ROTATE:
-                manager.setSample_Grid_RotateTo(myNumber, current_gird_num, current_angle);
+                manager.setSample_Grid_RotateTo(myNumber, current_grid_number, angle_list.get(current_grid_number));
                 refreshCurrentGrids();
                 break;
             case SharedData.GRIDMODE_RESIZE:
-                manager.setSample_Grid_ResizeTo(myNumber, current_gird_num, current_master.ypoints[3] -
-                        current_master.ypoints[0], current_master.xpoints[1] - current_master.xpoints[0]);
+                manager.setSample_Grid_ResizeTo(myNumber, current_grid_number, masterpoly_list.get(current_grid_number).ypoints[3] -
+                        masterpoly_list.get(current_grid_number).ypoints[0], masterpoly_list.get(current_grid_number).xpoints[1] - masterpoly_list.get(current_grid_number).xpoints[0]);
                 refreshCurrentGrids();
                 break;
             default:
@@ -278,15 +521,15 @@ public class ImageDisplay extends JScrollPane
         switch (mode)
         {
             case SharedData.GRIDMODE_SETUP:
-                parent_panel.coordinateFound(xCoordinate(e.getX()), yCoordinate(e.getY()));
+                manager.coordinateFound(xCoordinate(e.getX()), yCoordinate(e.getY()));
                 break;
             case SharedData.GRIDMODE_MOVETO:
-                int x_diff = xCoordinate(e.getX()) - current_master.xpoints[0];
-                int y_diff = yCoordinate(e.getY()) - current_master.ypoints[0];
-                current_master.xpoints[0] += x_diff;
-                current_master.ypoints[0] += y_diff;
-                manager.setSample_Grid_MoveTo(myNumber, current_gird_num, current_master.xpoints[0],
-                        current_master.ypoints[0]);
+                int x_diff = xCoordinate(e.getX()) - masterpoly_list.get(current_grid_number).xpoints[0];
+                int y_diff = yCoordinate(e.getY()) - masterpoly_list.get(current_grid_number).ypoints[0];
+                masterpoly_list.get(current_grid_number).xpoints[0] += x_diff;
+                masterpoly_list.get(current_grid_number).ypoints[0] += y_diff;
+                manager.setSample_Grid_MoveTo(myNumber, current_grid_number, masterpoly_list.get(current_grid_number).xpoints[0],
+                        masterpoly_list.get(current_grid_number).ypoints[0]);
                 refreshCurrentGrids();
                 break;
             default:
@@ -300,52 +543,47 @@ public class ImageDisplay extends JScrollPane
         switch(mode)
         {
             case SharedData.GRIDMODE_NORMAL:
+                System.out.println("SPIT");
                 int deltaX = x_last - e.getX();
                 int deltaY = y_last - e.getY();
-                Point point = this.getViewport().getViewPosition();
-                int beforeX = point.x;
-                int beforeY = point.y;
                 if (!refreshing)
                 {
-                    this.getVerticalScrollBar().setValue(this.getVerticalScrollBar().getValue() + deltaY);
-                    this.getHorizontalScrollBar().setValue(this.getHorizontalScrollBar().getValue() + deltaX);
+                    scrollBar_vert.setValue(scrollBar_vert.getValue() + deltaY);
+                    scrollBar_hori.setValue(scrollBar_hori.getValue() + deltaX);
                 }
-                int afterX = point.x;
-                int afterY = point.y;
-                x_last += beforeX - afterX;
-                y_last += beforeY - afterY;
+                x_last = e.getX();
+                y_last = e.getY();
+                refreshing = !refreshing;
                 break;
             case SharedData.GRIDMODE_MOVE:
                 int x_diff = xCoordinate(e.getX()) - x_last;
                 int y_diff = yCoordinate(e.getY()) - y_last;
-                for (int i = 0; i < current_master.xpoints.length; i++)
+                for (int i = 0; i < masterpoly_list.get(current_grid_number).xpoints.length; i++)
                 {
-                    current_master.xpoints[i] += x_diff;
-                    current_master.ypoints[i] += y_diff;
+                    masterpoly_list.get(current_grid_number).xpoints[i] += x_diff;
+                    masterpoly_list.get(current_grid_number).ypoints[i] += y_diff;
                 }
-                for (int i = 0; i < current_outer.xpoints.length; i++)
+                for (int i = 0; i < outerpoly_list.get(current_grid_number).xpoints.length; i++)
                 {
-                    current_outer.xpoints[i] += x_diff;
-                    current_outer.ypoints[i] += y_diff;
+                    outerpoly_list.get(current_grid_number).xpoints[i] += x_diff;
+                    outerpoly_list.get(current_grid_number).ypoints[i] += y_diff;
                 }
-                for (int i = 0; i < current_vert.length; i++)
+                for (int i = 0; i < vertlines_list.get(current_grid_number).length; i++)
                 {
-                    for (int j = 0; j < current_vert[i].xpoints.length; j++)
+                    for (int j = 0; j < vertlines_list.get(current_grid_number)[i].xpoints.length; j++)
                     {
-                        current_vert[i].xpoints[j] += x_diff;
-                        current_vert[i].ypoints[j] += y_diff;
+                        vertlines_list.get(current_grid_number)[i].xpoints[j] += x_diff;
+                        vertlines_list.get(current_grid_number)[i].ypoints[j] += y_diff;
                     }
                 }
-                for (int i = 0; i < current_hori.length; i++)
+                for (int i = 0; i < horilines_list.get(current_grid_number).length; i++)
                 {
-                    for (int j = 0; j < current_hori[i].xpoints.length; j++)
+                    for (int j = 0; j < horilines_list.get(current_grid_number)[i].xpoints.length; j++)
                     {
-                        current_hori[i].xpoints[j] += x_diff;
-                        current_hori[i].ypoints[j] += y_diff;
+                        horilines_list.get(current_grid_number)[i].xpoints[j] += x_diff;
+                        horilines_list.get(current_grid_number)[i].ypoints[j] += y_diff;
                     }
                 }
-                imageDisplayPanel.setNewGridDimensions(current_gird_num, current_angle, current_master, current_base,
-                        current_outer, current_vert, current_hori);
                 x_last = xCoordinate(e.getX());
                 y_last = yCoordinate(e.getY());
                 break;
@@ -357,98 +595,106 @@ public class ImageDisplay extends JScrollPane
                     AffineTransform aTransform = new AffineTransform();
                     if (yCoordinate(e.getY()) > y_origin)
                     {
-                        current_angle = working_angle + (yCoordinate(e.getY()) - y_origin - deadzone) * 0.001;
+                        angle_list.set(current_grid_number, working_angle.get(current_grid_number) +
+                                (yCoordinate(e.getY()) - y_origin - deadzone) * 0.001);
                         aTransform.setToRotation((yCoordinate(e.getY()) - y_origin - deadzone) * 0.001,
-                                working_master.xpoints[0], working_master.ypoints[0]);
+                                working_master.get(current_grid_number).xpoints[0],
+                                working_master.get(current_grid_number).ypoints[0]);
                     }
                     else
                     {
-                        current_angle = working_angle + (yCoordinate(e.getY()) - y_origin + deadzone) * 0.001;
+                        angle_list.set(current_grid_number, working_angle.get(current_grid_number) +
+                                (yCoordinate(e.getY()) - y_origin + deadzone) * 0.001);
                         aTransform.setToRotation((yCoordinate(e.getY()) - y_origin + deadzone) * 0.001,
-                                working_master.xpoints[0], working_master.ypoints[0]);
+                                working_master.get(current_grid_number).xpoints[0],
+                                working_master.get(current_grid_number).ypoints[0]);
                     }
 
-                    start = new Point2D.Double(working_outer.xpoints[0], working_outer.ypoints[0]);
+                    start = new Point2D.Double(working_outer.get(current_grid_number).xpoints[0],
+                            working_outer.get(current_grid_number).ypoints[0]);
                     aTransform.transform(start, done);
-                    current_outer.xpoints[0] = (int)Math.round(done.getX());
-                    current_outer.ypoints[0] = (int)Math.round(done.getY());
+                    outerpoly_list.get(current_grid_number).xpoints[0] = (int)Math.round(done.getX());
+                    outerpoly_list.get(current_grid_number).ypoints[0] = (int)Math.round(done.getY());
 
-                    start = new Point2D.Double(working_outer.xpoints[1], working_outer.ypoints[1]);
+                    start = new Point2D.Double(working_outer.get(current_grid_number).xpoints[1],
+                            working_outer.get(current_grid_number).ypoints[1]);
                     aTransform.transform(start, done);
-                    current_outer.xpoints[1] = (int)Math.round(done.getX());
-                    current_outer.ypoints[1] = (int)Math.round(done.getY());
+                    outerpoly_list.get(current_grid_number).xpoints[1] = (int)Math.round(done.getX());
+                    outerpoly_list.get(current_grid_number).ypoints[1] = (int)Math.round(done.getY());
 
-                    start = new Point2D.Double(working_outer.xpoints[2], working_outer.ypoints[2]);
+                    start = new Point2D.Double(working_outer.get(current_grid_number).xpoints[2],
+                            working_outer.get(current_grid_number).ypoints[2]);
                     aTransform.transform(start, done);
-                    current_outer.xpoints[2] = (int)Math.round(done.getX());
-                    current_outer.ypoints[2] = (int)Math.round(done.getY());
+                    outerpoly_list.get(current_grid_number).xpoints[2] = (int)Math.round(done.getX());
+                    outerpoly_list.get(current_grid_number).ypoints[2] = (int)Math.round(done.getY());
 
-                    start = new Point2D.Double(working_outer.xpoints[3], working_outer.ypoints[3]);
+                    start = new Point2D.Double(working_outer.get(current_grid_number).xpoints[3],
+                            working_outer.get(current_grid_number).ypoints[3]);
                     aTransform.transform(start, done);
-                    current_outer.xpoints[3] = (int)Math.round(done.getX());
-                    current_outer.ypoints[3] = (int)Math.round(done.getY());
+                    outerpoly_list.get(current_grid_number).xpoints[3] = (int)Math.round(done.getX());
+                    outerpoly_list.get(current_grid_number).ypoints[3] = (int)Math.round(done.getY());
 
-                    double dy1 = (double)(current_outer.ypoints[1] - (current_outer.ypoints[0])) /
-                            (double)current_vert.length;
-                    double dx1 = (double)(current_outer.xpoints[1] - (current_outer.xpoints[0])) /
-                            (double)current_vert.length;
-                    for(int j = 0; j < current_vert.length; j++)
+                    double dy1 = (double)(outerpoly_list.get(current_grid_number).ypoints[1] -
+                            (outerpoly_list.get(current_grid_number).ypoints[0])) /
+                            (double)vertlines_list.get(current_grid_number).length;
+                    double dx1 = (double)(outerpoly_list.get(current_grid_number).xpoints[1] -
+                            (outerpoly_list.get(current_grid_number).xpoints[0])) /
+                            (double)vertlines_list.get(current_grid_number).length;
+                    for(int j = 0; j < vertlines_list.get(current_grid_number).length; j++)
                     {
-                        current_vert[j].xpoints[0] = current_outer.xpoints[0] + (int)((j + 1) * dx1);
-                        current_vert[j].ypoints[0] = current_outer.ypoints[0] + (int)((j + 1) * dy1);
-                        current_vert[j].xpoints[1] = current_outer.xpoints[3] + (int)((j + 1) * dx1);
-                        current_vert[j].ypoints[1] = current_outer.ypoints[3] + (int)((j + 1) * dy1);
-                        current_vert[j].xpoints[2] = current_outer.xpoints[3] + (int)((j) * dx1);
-                        current_vert[j].ypoints[2] = current_outer.ypoints[3] + (int)((j) * dy1);
-                        current_vert[j].xpoints[3] = current_outer.xpoints[0] + (int)((j) * dx1);
-                        current_vert[j].ypoints[3] = current_outer.ypoints[0] + (int)((j) * dy1);
+                        vertlines_list.get(current_grid_number)[j].xpoints[0] = outerpoly_list.get(current_grid_number).xpoints[0] + (int)((j + 1) * dx1);
+                        vertlines_list.get(current_grid_number)[j].ypoints[0] = outerpoly_list.get(current_grid_number).ypoints[0] + (int)((j + 1) * dy1);
+                        vertlines_list.get(current_grid_number)[j].xpoints[1] = outerpoly_list.get(current_grid_number).xpoints[3] + (int)((j + 1) * dx1);
+                        vertlines_list.get(current_grid_number)[j].ypoints[1] = outerpoly_list.get(current_grid_number).ypoints[3] + (int)((j + 1) * dy1);
+                        vertlines_list.get(current_grid_number)[j].xpoints[2] = outerpoly_list.get(current_grid_number).xpoints[3] + (int)((j) * dx1);
+                        vertlines_list.get(current_grid_number)[j].ypoints[2] = outerpoly_list.get(current_grid_number).ypoints[3] + (int)((j) * dy1);
+                        vertlines_list.get(current_grid_number)[j].xpoints[3] = outerpoly_list.get(current_grid_number).xpoints[0] + (int)((j) * dx1);
+                        vertlines_list.get(current_grid_number)[j].ypoints[3] = outerpoly_list.get(current_grid_number).ypoints[0] + (int)((j) * dy1);
                     }
 
-                    double dy2 = (double)(current_outer.ypoints[3] - (current_outer.ypoints[0])) /
-                            (double)current_hori.length;
-                    double dx2 = (double)(current_outer.xpoints[3] - (current_outer.xpoints[0])) /
-                            (double)current_hori.length;
-                    for(int k = 0; k < current_hori.length; k++)
+                    double dy2 = (double)(outerpoly_list.get(current_grid_number).ypoints[3] - (outerpoly_list.get(current_grid_number).ypoints[0])) /
+                            (double)horilines_list.get(current_grid_number).length;
+                    double dx2 = (double)(outerpoly_list.get(current_grid_number).xpoints[3] - (outerpoly_list.get(current_grid_number).xpoints[0])) /
+                            (double)horilines_list.get(current_grid_number).length;
+                    for(int k = 0; k < horilines_list.get(current_grid_number).length; k++)
                     {
-                        current_hori[k].xpoints[0] = current_outer.xpoints[0] + (int)((k + 1) * dx2);
-                        current_hori[k].ypoints[0] = current_outer.ypoints[0] + (int)((k + 1) * dy2);
-                        current_hori[k].xpoints[1] = current_outer.xpoints[1] + (int)((k + 1) * dx2);
-                        current_hori[k].ypoints[1] = current_outer.ypoints[1] + (int)((k + 1) * dy2);
-                        current_hori[k].xpoints[2] = current_outer.xpoints[1] + (int)((k) * dx2);
-                        current_hori[k].ypoints[2] = current_outer.ypoints[1] + (int)((k) * dy2);
-                        current_hori[k].xpoints[3] = current_outer.xpoints[0] + (int)((k) * dx2);
-                        current_hori[k].ypoints[3] = current_outer.ypoints[0] + (int)((k) * dy2);
+                        horilines_list.get(current_grid_number)[k].xpoints[0] = outerpoly_list.get(current_grid_number).xpoints[0] + (int)((k + 1) * dx2);
+                        horilines_list.get(current_grid_number)[k].ypoints[0] = outerpoly_list.get(current_grid_number).ypoints[0] + (int)((k + 1) * dy2);
+                        horilines_list.get(current_grid_number)[k].xpoints[1] = outerpoly_list.get(current_grid_number).xpoints[1] + (int)((k + 1) * dx2);
+                        horilines_list.get(current_grid_number)[k].ypoints[1] = outerpoly_list.get(current_grid_number).ypoints[1] + (int)((k + 1) * dy2);
+                        horilines_list.get(current_grid_number)[k].xpoints[2] = outerpoly_list.get(current_grid_number).xpoints[1] + (int)((k) * dx2);
+                        horilines_list.get(current_grid_number)[k].ypoints[2] = outerpoly_list.get(current_grid_number).ypoints[1] + (int)((k) * dy2);
+                        horilines_list.get(current_grid_number)[k].xpoints[3] = outerpoly_list.get(current_grid_number).xpoints[0] + (int)((k) * dx2);
+                        horilines_list.get(current_grid_number)[k].ypoints[3] = outerpoly_list.get(current_grid_number).ypoints[0] + (int)((k) * dy2);
                     }
                 }
                 else
                 {
-                    current_angle = working_angle;
-                    current_outer = new Polygon();
-                    for (int i = 0; i < working_outer.xpoints.length; i++)
+                    angle_list.set(current_grid_number, working_angle.get(current_grid_number));
+                    outerpoly_list.set(current_grid_number, new Polygon());
+                    for (int i = 0; i < working_outer.get(current_grid_number).xpoints.length; i++)
                     {
-                        current_outer.addPoint(working_outer.xpoints[i], working_outer.ypoints[i]);
+                        outerpoly_list.get(current_grid_number).addPoint(working_outer.get(current_grid_number).xpoints[i], working_outer.get(current_grid_number).ypoints[i]);
                     }
-                    current_vert = new Polygon[working_vert.length];
-                    for (int i = 0; i < working_vert.length; i++)
+                    vertlines_list.set(current_grid_number, new Polygon[working_vert.get(current_grid_number).length]);
+                    for (int i = 0; i < working_vert.get(current_grid_number).length; i++)
                     {
-                        current_vert[i] = new Polygon();
-                        for (int j = 0; j < working_vert[i].xpoints.length; j++)
+                        vertlines_list.get(current_grid_number)[i] = new Polygon();
+                        for (int j = 0; j < working_vert.get(current_grid_number)[i].xpoints.length; j++)
                         {
-                            current_vert[i].addPoint(working_vert[i].xpoints[j], working_vert[i].ypoints[j]);
+                            vertlines_list.get(current_grid_number)[i].addPoint(working_vert.get(current_grid_number)[i].xpoints[j], working_vert.get(current_grid_number)[i].ypoints[j]);
                         }
                     }
-                    current_hori = new Polygon[working_hori.length];
-                    for (int i = 0; i < working_hori.length; i++)
+                    horilines_list.set(current_grid_number, new Polygon[working_hori.get(current_grid_number).length]);
+                    for (int i = 0; i < working_hori.get(current_grid_number).length; i++)
                     {
-                        current_hori[i] = new Polygon();
-                        for (int j = 0; j < working_hori[i].xpoints.length; j++)
+                        horilines_list.get(current_grid_number)[i] = new Polygon();
+                        for (int j = 0; j < working_hori.get(current_grid_number)[i].xpoints.length; j++)
                         {
-                            current_hori[i].addPoint(working_hori[i].xpoints[j], working_hori[i].ypoints[j]);
+                            horilines_list.get(current_grid_number)[i].addPoint(working_hori.get(current_grid_number)[i].xpoints[j], working_hori.get(current_grid_number)[i].ypoints[j]);
                         }
                     }
                 }
-                imageDisplayPanel.setNewGridDimensions(current_gird_num, current_angle, current_master, current_base,
-                        current_outer, current_vert, current_hori);
                 x_last = xCoordinate(e.getX());
                 y_last = yCoordinate(e.getY());
                 break;
@@ -464,8 +710,8 @@ public class ImageDisplay extends JScrollPane
                     {
                         diff = yCoordinate(e.getY()) - y_origin + deadzone;
                     }
-                    current_master.ypoints[2] = working_master.ypoints[2] + diff;
-                    current_master.ypoints[3] = working_master.ypoints[3] + diff;
+                    masterpoly_list.get(current_grid_number).ypoints[2] = working_master.get(current_grid_number).ypoints[2] + diff;
+                    masterpoly_list.get(current_grid_number).ypoints[3] = working_master.get(current_grid_number).ypoints[3] + diff;
                     current_outer_height = working_outer_height + diff;
                 }
                 if (xCoordinate(e.getX()) > x_origin + deadzone || xCoordinate(e.getX()) < x_origin - deadzone)
@@ -479,8 +725,8 @@ public class ImageDisplay extends JScrollPane
                     {
                         diff = xCoordinate(e.getX()) - x_origin + deadzone;
                     }
-                    current_master.xpoints[1] = working_master.xpoints[1] + diff;
-                    current_master.xpoints[2] = working_master.xpoints[2] + diff;
+                    masterpoly_list.get(current_grid_number).xpoints[1] = working_master.get(current_grid_number).xpoints[1] + diff;
+                    masterpoly_list.get(current_grid_number).xpoints[2] = working_master.get(current_grid_number).xpoints[2] + diff;
                     current_outer_width = working_outer_width + diff;
                 }
                 if (yCoordinate(e.getY()) > y_origin + deadzone || yCoordinate(e.getY()) < y_origin - deadzone ||
@@ -489,99 +735,98 @@ public class ImageDisplay extends JScrollPane
                     Point2D.Double done = new Point2D.Double();
                     Point2D.Double start;
                     AffineTransform aTransform = new AffineTransform();
-                    aTransform.setToRotation(current_angle, working_outer.xpoints[0], working_outer.ypoints[0]);
+                    aTransform.setToRotation(angle_list.get(current_grid_number), working_outer.get(current_grid_number).xpoints[0], working_outer.get(current_grid_number).ypoints[0]);
 
-                    start = new Point2D.Double(current_outer_width + working_outer.xpoints[0],
-                            working_outer.ypoints[0]);
+                    start = new Point2D.Double(current_outer_width + working_outer.get(current_grid_number).xpoints[0],
+                            working_outer.get(current_grid_number).ypoints[0]);
                     aTransform.transform(start, done);
-                    current_outer.xpoints[1] = (int)Math.round(done.getX());
-                    current_outer.ypoints[1] = (int)Math.round(done.getY());
+                    outerpoly_list.get(current_grid_number).xpoints[1] = (int)Math.round(done.getX());
+                    outerpoly_list.get(current_grid_number).ypoints[1] = (int)Math.round(done.getY());
 
-                    start = new Point2D.Double(working_outer.xpoints[0], current_outer_height +
-                            working_outer.ypoints[0]);
+                    start = new Point2D.Double(working_outer.get(current_grid_number).xpoints[0], current_outer_height +
+                            working_outer.get(current_grid_number).ypoints[0]);
                     aTransform.transform(start, done);
-                    current_outer.xpoints[3] = (int)Math.round(done.getX());
-                    current_outer.ypoints[3] = (int)Math.round(done.getY());
+                    outerpoly_list.get(current_grid_number).xpoints[3] = (int)Math.round(done.getX());
+                    outerpoly_list.get(current_grid_number).ypoints[3] = (int)Math.round(done.getY());
 
-                    start = new Point2D.Double(current_outer_width + working_outer.xpoints[0], current_outer_height +
-                            working_outer.ypoints[0]);
+                    start = new Point2D.Double(current_outer_width + working_outer.get(current_grid_number).xpoints[0], current_outer_height +
+                            working_outer.get(current_grid_number).ypoints[0]);
                     aTransform.transform(start, done);
-                    current_outer.xpoints[2] = (int)Math.round(done.getX());
-                    current_outer.ypoints[2] = (int)Math.round(done.getY());
+                    outerpoly_list.get(current_grid_number).xpoints[2] = (int)Math.round(done.getX());
+                    outerpoly_list.get(current_grid_number).ypoints[2] = (int)Math.round(done.getY());
 
-                    double dy1 = (double)(current_outer.ypoints[1] - (current_outer.ypoints[0])) /
-                            (double)current_vert.length;
-                    double dx1 = (double)(current_outer.xpoints[1] - (current_outer.xpoints[0])) /
-                            (double)current_vert.length;
-                    for(int j = 0; j < current_vert.length; j++)
+                    double dy1 = (double)(outerpoly_list.get(current_grid_number).ypoints[1] - (outerpoly_list.get(current_grid_number).ypoints[0])) /
+                            (double)vertlines_list.get(current_grid_number).length;
+                    double dx1 = (double)(outerpoly_list.get(current_grid_number).xpoints[1] - (outerpoly_list.get(current_grid_number).xpoints[0])) /
+                            (double)vertlines_list.get(current_grid_number).length;
+                    for(int j = 0; j < vertlines_list.get(current_grid_number).length; j++)
                     {
-                        current_vert[j].xpoints[0] = current_outer.xpoints[0] + (int)((j + 1) * dx1);
-                        current_vert[j].ypoints[0] = current_outer.ypoints[0] + (int)((j + 1) * dy1);
-                        current_vert[j].xpoints[1] = current_outer.xpoints[3] + (int)((j + 1) * dx1);
-                        current_vert[j].ypoints[1] = current_outer.ypoints[3] + (int)((j + 1) * dy1);
-                        current_vert[j].xpoints[2] = current_outer.xpoints[3] + (int)((j) * dx1);
-                        current_vert[j].ypoints[2] = current_outer.ypoints[3] + (int)((j) * dy1);
-                        current_vert[j].xpoints[3] = current_outer.xpoints[0] + (int)((j) * dx1);
-                        current_vert[j].ypoints[3] = current_outer.ypoints[0] + (int)((j) * dy1);
+                        vertlines_list.get(current_grid_number)[j].xpoints[0] = outerpoly_list.get(current_grid_number).xpoints[0] + (int)((j + 1) * dx1);
+                        vertlines_list.get(current_grid_number)[j].ypoints[0] = outerpoly_list.get(current_grid_number).ypoints[0] + (int)((j + 1) * dy1);
+                        vertlines_list.get(current_grid_number)[j].xpoints[1] = outerpoly_list.get(current_grid_number).xpoints[3] + (int)((j + 1) * dx1);
+                        vertlines_list.get(current_grid_number)[j].ypoints[1] = outerpoly_list.get(current_grid_number).ypoints[3] + (int)((j + 1) * dy1);
+                        vertlines_list.get(current_grid_number)[j].xpoints[2] = outerpoly_list.get(current_grid_number).xpoints[3] + (int)((j) * dx1);
+                        vertlines_list.get(current_grid_number)[j].ypoints[2] = outerpoly_list.get(current_grid_number).ypoints[3] + (int)((j) * dy1);
+                        vertlines_list.get(current_grid_number)[j].xpoints[3] = outerpoly_list.get(current_grid_number).xpoints[0] + (int)((j) * dx1);
+                        vertlines_list.get(current_grid_number)[j].ypoints[3] = outerpoly_list.get(current_grid_number).ypoints[0] + (int)((j) * dy1);
                     }
 
-                    double dy2 = (double)(current_outer.ypoints[3] - (current_outer.ypoints[0])) /
-                            (double)current_hori.length;
-                    double dx2 = (double)(current_outer.xpoints[3] - (current_outer.xpoints[0])) /
-                            (double)current_hori.length;
-                    for(int k = 0; k < current_hori.length; k++)
+                    double dy2 = (double)(outerpoly_list.get(current_grid_number).ypoints[3] - (outerpoly_list.get(current_grid_number).ypoints[0])) /
+                            (double)horilines_list.get(current_grid_number).length;
+                    double dx2 = (double)(outerpoly_list.get(current_grid_number).xpoints[3] - (outerpoly_list.get(current_grid_number).xpoints[0])) /
+                            (double)horilines_list.get(current_grid_number).length;
+                    for(int k = 0; k < horilines_list.get(current_grid_number).length; k++)
                     {
-                        current_hori[k].xpoints[0] = current_outer.xpoints[0] + (int)((k + 1) * dx2);
-                        current_hori[k].ypoints[0] = current_outer.ypoints[0] + (int)((k + 1) * dy2);
-                        current_hori[k].xpoints[1] = current_outer.xpoints[1] + (int)((k + 1) * dx2);
-                        current_hori[k].ypoints[1] = current_outer.ypoints[1] + (int)((k + 1) * dy2);
-                        current_hori[k].xpoints[2] = current_outer.xpoints[1] + (int)((k) * dx2);
-                        current_hori[k].ypoints[2] = current_outer.ypoints[1] + (int)((k) * dy2);
-                        current_hori[k].xpoints[3] = current_outer.xpoints[0] + (int)((k) * dx2);
-                        current_hori[k].ypoints[3] = current_outer.ypoints[0] + (int)((k) * dy2);
+                        horilines_list.get(current_grid_number)[k].xpoints[0] = outerpoly_list.get(current_grid_number).xpoints[0] + (int)((k + 1) * dx2);
+                        horilines_list.get(current_grid_number)[k].ypoints[0] = outerpoly_list.get(current_grid_number).ypoints[0] + (int)((k + 1) * dy2);
+                        horilines_list.get(current_grid_number)[k].xpoints[1] = outerpoly_list.get(current_grid_number).xpoints[1] + (int)((k + 1) * dx2);
+                        horilines_list.get(current_grid_number)[k].ypoints[1] = outerpoly_list.get(current_grid_number).ypoints[1] + (int)((k + 1) * dy2);
+                        horilines_list.get(current_grid_number)[k].xpoints[2] = outerpoly_list.get(current_grid_number).xpoints[1] + (int)((k) * dx2);
+                        horilines_list.get(current_grid_number)[k].ypoints[2] = outerpoly_list.get(current_grid_number).ypoints[1] + (int)((k) * dy2);
+                        horilines_list.get(current_grid_number)[k].xpoints[3] = outerpoly_list.get(current_grid_number).xpoints[0] + (int)((k) * dx2);
+                        horilines_list.get(current_grid_number)[k].ypoints[3] = outerpoly_list.get(current_grid_number).ypoints[0] + (int)((k) * dy2);
                     }
                 }
                 else
                 {
-                    current_master = new Polygon();
-                    for (int i = 0; i < working_master.xpoints.length; i++)
+                    masterpoly_list.set(current_grid_number, new Polygon());
+                    for (int i = 0; i < working_master.get(current_grid_number).xpoints.length; i++)
                     {
-                        current_master.addPoint(working_master.xpoints[i], working_master.ypoints[i]);
+                        masterpoly_list.get(current_grid_number).addPoint(working_master.get(current_grid_number).xpoints[i], working_master.get(current_grid_number).ypoints[i]);
                     }
-                    current_outer = new Polygon();
-                    for (int i = 0; i < working_outer.xpoints.length; i++)
+                    outerpoly_list.set(current_grid_number, new Polygon());
+                    for (int i = 0; i < working_outer.get(current_grid_number).xpoints.length; i++)
                     {
-                        current_outer.addPoint(working_outer.xpoints[i], working_outer.ypoints[i]);
+                        outerpoly_list.get(current_grid_number).addPoint(working_outer.get(current_grid_number).xpoints[i], working_outer.get(current_grid_number).ypoints[i]);
                     }
-                    current_vert = new Polygon[working_vert.length];
-                    for (int i = 0; i < working_vert.length; i++)
+                    vertlines_list.set(current_grid_number, new Polygon[working_vert.get(current_grid_number).length]);
+                    for (int i = 0; i < working_vert.get(current_grid_number).length; i++)
                     {
-                        current_vert[i] = new Polygon();
-                        for (int j = 0; j < working_vert[i].xpoints.length; j++)
+                        vertlines_list.get(current_grid_number)[i] = new Polygon();
+                        for (int j = 0; j < working_vert.get(current_grid_number)[i].xpoints.length; j++)
                         {
-                            current_vert[i].addPoint(working_vert[i].xpoints[j], working_vert[i].ypoints[j]);
+                            vertlines_list.get(current_grid_number)[i].addPoint(working_vert.get(current_grid_number)[i].xpoints[j], working_vert.get(current_grid_number)[i].ypoints[j]);
                         }
                     }
-                    current_hori = new Polygon[working_hori.length];
-                    for (int i = 0; i < working_hori.length; i++)
+                    horilines_list.set(current_grid_number,  new Polygon[working_hori.get(current_grid_number).length]);
+                    for (int i = 0; i < working_hori.get(current_grid_number).length; i++)
                     {
-                        current_hori[i] = new Polygon();
-                        for (int j = 0; j < working_hori[i].xpoints.length; j++)
+                        horilines_list.get(current_grid_number)[i] = new Polygon();
+                        for (int j = 0; j < working_hori.get(current_grid_number)[i].xpoints.length; j++)
                         {
-                            current_hori[i].addPoint(working_hori[i].xpoints[j], working_hori[i].ypoints[j]);
+                            horilines_list.get(current_grid_number)[i].addPoint(working_hori.get(current_grid_number)[i].xpoints[j], working_hori.get(current_grid_number)[i].ypoints[j]);
                         }
                     }
                     current_outer_width = working_outer_width;
                     current_outer_height = working_outer_height;
                 }
-                imageDisplayPanel.setNewGridDimensions(current_gird_num, current_angle, current_master, current_base,
-                        current_outer, current_vert, current_hori);
                 x_last = xCoordinate(e.getX());
                 y_last = yCoordinate(e.getY());
                 break;
             default:
                 break;
         }
+        repaint();
     }
 
     private void this_mouseWheelMoved(MouseWheelEvent e)
@@ -590,21 +835,14 @@ public class ImageDisplay extends JScrollPane
     }
 
     private int gridCount = 0;
-    private int current_gird_num;
-    private double current_angle;
-    private Polygon current_master;
-    private Polygon current_base;
-    private Polygon current_outer;
-    private Polygon[] current_vert;
-    private Polygon[] current_hori;
     private int current_outer_width;
     private int current_outer_height;
-    private double working_angle;
-    private Polygon working_master;
-    private Polygon working_base;
-    private Polygon working_outer;
-    private Polygon[] working_vert;
-    private Polygon[] working_hori;
+    private ArrayList<Double> working_angle = new ArrayList<>();
+    private ArrayList<Polygon> working_master = new ArrayList<>();
+    private ArrayList<Polygon> working_base = new ArrayList<>();
+    private ArrayList<Polygon> working_outer = new ArrayList<>();
+    private ArrayList<Polygon[]> working_vert = new ArrayList<>();
+    private ArrayList<Polygon[]> working_hori = new ArrayList<>();
     private int working_outer_width;
     private int working_outer_height;
 
@@ -612,74 +850,47 @@ public class ImageDisplay extends JScrollPane
     {
         if (manager.getSample_GridCount(myNumber) > gridCount)
         {
-            current_angle = manager.getSample_Grid_Angle(myNumber, gridCount);
-            current_master = manager.getSample_Grid_Polygon_Master(myNumber, gridCount);
-            current_base = manager.getSample_Grid_Polygon_Base(myNumber, gridCount);
-            current_outer = manager.getSample_Grid_Polygon_Outline(myNumber, gridCount);
-            current_vert = manager.getSample_Grid_Polygon_VerticalLines(myNumber, gridCount);
-            current_hori = manager.getSample_Grid_Polygon_HorizontalLines(myNumber, gridCount);
-            imageDisplayPanel.addGrid(current_angle, current_master, current_base, current_outer, current_vert,
-                    current_hori);
-            current_gird_num = gridCount;
+            angle_list.add(manager.getSample_Grid_Angle(myNumber, gridCount));
+            masterpoly_list.add(manager.getSample_Grid_Polygon_Master(myNumber, gridCount));
+            basepoly_list.add(manager.getSample_Grid_Polygon_Base(myNumber, gridCount));
+            outerpoly_list.add(manager.getSample_Grid_Polygon_Outline(myNumber, gridCount));
+            vertlines_list.add(manager.getSample_Grid_Polygon_VerticalLines(myNumber, gridCount));
+            horilines_list.add(manager.getSample_Grid_Polygon_HorizontalLines(myNumber, gridCount));
+            working_angle.add(angle_list.get(angle_list.size() - 1));
+            working_master.add(masterpoly_list.get(masterpoly_list.size() - 1));
+            working_base.add(basepoly_list.get(basepoly_list.size() - 1));
+            working_outer.add(outerpoly_list.get(outerpoly_list.size() - 1));
+            working_vert.add(vertlines_list.get(vertlines_list.size() - 1));
+            working_hori.add(horilines_list.get(horilines_list.size() - 1));
+            current_grid_number = gridCount;
             gridCount++;
         }
     }
 
     private void refreshCurrentGrids()
     {
-        current_angle = manager.getSample_Grid_Angle(myNumber, current_gird_num);
-        current_master = manager.getSample_Grid_Polygon_Master(myNumber, current_gird_num);
-        current_base = manager.getSample_Grid_Polygon_Base(myNumber, current_gird_num);
-        current_outer = manager.getSample_Grid_Polygon_Outline(myNumber, current_gird_num);
-        current_vert = manager.getSample_Grid_Polygon_VerticalLines(myNumber, current_gird_num);
-        current_hori = manager.getSample_Grid_Polygon_HorizontalLines(myNumber, current_gird_num);
-        imageDisplayPanel.setNewGridDimensions(current_gird_num, current_angle, current_master, current_base,
-                current_outer, current_vert, current_hori);
+        angle_list.set(current_grid_number, manager.getSample_Grid_Angle(myNumber, current_grid_number));
+        masterpoly_list.set(current_grid_number, manager.getSample_Grid_Polygon_Master(myNumber, current_grid_number));
+        basepoly_list.set(current_grid_number, manager.getSample_Grid_Polygon_Base(myNumber, current_grid_number));
+        outerpoly_list.set(current_grid_number, manager.getSample_Grid_Polygon_Outline(myNumber, current_grid_number));
+        vertlines_list.set(current_grid_number, manager.getSample_Grid_Polygon_VerticalLines(myNumber, current_grid_number));
+        horilines_list.set(current_grid_number, manager.getSample_Grid_Polygon_HorizontalLines(myNumber, current_grid_number));
+        repaint();
+    }
+
+    public void reloadGrid(int grid)
+    {
+        this.setNewGridDimensions(grid, manager.getSample_Grid_Angle(myNumber, current_grid_number),
+                manager.getSample_Grid_Polygon_Master(myNumber, current_grid_number),
+                manager.getSample_Grid_Polygon_Base(myNumber, current_grid_number),
+                manager.getSample_Grid_Polygon_Outline(myNumber, current_grid_number),
+                manager.getSample_Grid_Polygon_VerticalLines(myNumber, current_grid_number),
+                manager.getSample_Grid_Polygon_HorizontalLines(myNumber, current_grid_number));
     }
 
     public void setGridMode(int i)
     {
         mode = i;
-    }
-
-    public void zoomToCurrentGrid()
-    {
-        int x = 1000000000;
-        int y = 1000000000;
-        for (int i: current_outer.xpoints)
-        {
-            if (i < x)
-            {
-                x = i;
-            }
-        }
-        for (int i: current_outer.ypoints)
-        {
-            if (i < y)
-            {
-                y = i;
-            }
-        }
-        this.getVerticalScrollBar().setValue(y - 10);
-        this.getHorizontalScrollBar().setValue(x - 10);
-    }
-
-    public void setCurrentGrid(int grid)
-    {
-        current_gird_num = grid;
-        imageDisplayPanel.setCurrentGridNumber(grid);
-        repaint();
-    }
-
-    public void removeCurrentGrid()
-    {
-        imageDisplayPanel.removeCurrentGrid();
-        gridCount--;
-    }
-
-    public void setMagnification(double zoom)
-    {
-        imageDisplayPanel.setMagnification(zoom);
     }
 
     public void changeContrast(int val)
@@ -689,12 +900,12 @@ public class ImageDisplay extends JScrollPane
                 setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
                 double contrast = (double)val;
                 contrast/=100;
-                int w = image.getWidth(null);
-                int h = image.getHeight(null);
+                int w = im.getWidth(null);
+                int h = im.getHeight(null);
                 int[] pixels = new int[w*h];
 
 
-                PixelGrabber pg = new PixelGrabber(image, 0,0,w,h,pixels,0,w);
+                PixelGrabber pg = new PixelGrabber(im, 0,0,w,h,pixels,0,w);
 
                 try{
                     pg.grabPixels();
@@ -717,11 +928,38 @@ public class ImageDisplay extends JScrollPane
 
                     pixels[i] = (a << 24 | r << 16 | g << 8 | b);
                 }
-                imageDisplayPanel.ip.setImage(createImage(new MemoryImageSource(w,h,pixels,0,w)));
-                imageDisplayPanel.repaint();
+                ip.setImage(createImage(new MemoryImageSource(w,h,pixels,0,w)));
+                ip.repaintWindow();
                 setCursor(Cursor.getDefaultCursor());
             }
         };
         thread.start();
+        repaint();
+    }
+
+    public void removeGrid(int grid)
+    {
+        if (current_grid_number == grid && current_grid_number == angle_list.size() - 1)
+        {
+            current_grid_number--;
+        }
+        else if (current_grid_number > grid)
+        {
+            current_grid_number--;
+        }
+        angle_list.remove(grid);
+        masterpoly_list.remove(grid);
+        basepoly_list.remove(grid);
+        outerpoly_list.remove(grid);
+        vertlines_list.remove(grid);
+        horilines_list.remove(grid);
+    }
+
+    private JScrollBar scrollBar_hori;
+    private JScrollBar scrollBar_vert;
+    public void addScrollBars(JScrollBar hori, JScrollBar vert)
+    {
+        scrollBar_hori = hori;
+        scrollBar_vert = vert;
     }
 }

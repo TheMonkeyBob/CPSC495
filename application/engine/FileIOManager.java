@@ -25,6 +25,21 @@ public class FileIOManager
         ProjectIO.newProject(path);
     }
 
+    public void loadProject(String path)
+    {
+        ProjectIO.readProject(path, this);
+    }
+
+    public void saveProject(String path)
+    {
+        ProjectIO.writeProject(path, this);
+    }
+
+    public void newSample(String basePath, String name, String greenPath, String redPath, String geneData)
+    {
+        SampleIO.newSample(basePath, name, greenPath, redPath, geneData, this);
+    }
+
     public ArrayList<String> getSamplePaths()
     {
         ArrayList<String> list = new ArrayList<>();
@@ -63,7 +78,7 @@ public class FileIOManager
 
     public void writeGrids(String path, int sample)
     {
-        GridIO.writeGrids(this, path, sample);
+        GridIO.writeGrids(this, path + "\\Grids.grid", sample);
     }
 
     public void addSample(String path, String name, ImagePlus green, ImagePlus red)

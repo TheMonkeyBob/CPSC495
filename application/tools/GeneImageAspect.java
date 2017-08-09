@@ -1,4 +1,4 @@
-package application;
+package application.tools;
 
 /**
  * Created by Lukas Pihl

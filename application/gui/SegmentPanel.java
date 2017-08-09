@@ -1,6 +1,6 @@
 package application.gui;
 
-import application.GeneImageAspect;
+import application.tools.GeneImageAspect;
 import application.engine.GuiManager;
 
 import javax.swing.*;
@@ -64,7 +64,7 @@ public class SegmentPanel extends JPanel
     private SegmentDisplay display_Red;
     private int segmentation_method = GeneImageAspect.FIXED_CIRCLE;
 
-    public SegmentPanel(int number, GuiManager manager)
+    public SegmentPanel(GuiManager manager, int number)
     {
         super();
         this.manager = manager;
@@ -550,10 +550,12 @@ public class SegmentPanel extends JPanel
         {
             display_Green = new SegmentDisplay(myNumber, true, manager);
             display_Green.setBounds(-10, -50, 200, 200);
+            display_Green.setViewSize(200, 200);
             scrollPane_GreenDisplay.setViewportView(display_Green);
             display_Red = new SegmentDisplay(myNumber, false, manager);
             display_Red.setBounds(-10, -50, 200, 200);
             scrollPane_RedDisplay.setViewportView(display_Red);
+            display_Red.setViewSize(200, 200);
             display_Green.zoom(10);
             display_Red.zoom(10);
             textField_GridNum.setValue(1);
@@ -595,22 +597,58 @@ public class SegmentPanel extends JPanel
                 display_Green.setSeededRegion(manager.getSample_Gene_CenterSpots(myNumber, true));
                 display_Red.setSeededRegion(manager.getSample_Gene_CenterSpots(myNumber, false));
             }
+            greenBG = "Pending...";
+            greenFG = "Pending...";
+            redBG = "Pending...";
+            redFG = "Pending...";
+            ratio = "Pending...";
             if(ratioMethod==GeneImageAspect.TOTAL_SIGNAL||ratioMethod==GeneImageAspect.TOTAL_SUBTRACT_BG)
             {
-                textArea_GreenDisplay.setText("BG Total: " + df.format(manager.getSample_Gene_GreenBackgroundTotal(myNumber)) +
-                        "\nFG Total: " +  df.format(manager.getSample_Gene_GreenForegroundTotal(myNumber)));
-                textArea_RedDisplay.setText("BG Total: " + df.format(manager.getSample_Gene_RedBackgroundTotal(myNumber)) +
-                        "\nFG Total: " + df.format(manager.getSample_Gene_RedForegroundTotal(myNumber)));
+                textArea_GreenDisplay.setText("BG Total: " + greenBG +
+                        "\nFG Total: " +  greenFG);
+                textArea_RedDisplay.setText("BG Total: " + redBG +
+                        "\nFG Total: " + redFG);
             }
             else
             {
-                textArea_GreenDisplay.setText("BG Average: " + df.format(manager.getSample_Gene_GreenBackgroundAvg(myNumber)) +
-                        "\nFG Average: " + df.format(manager.getSample_Gene_GreenForegroundAvg(myNumber)));
-                textArea_RedDisplay.setText("BG Average: " + df.format(manager.getSample_Gene_RedBackgroundAvg(myNumber)) +
-                        "\nFG Average: " + df.format(manager.getSample_Gene_RedForegroundAvg(myNumber)));
+                textArea_GreenDisplay.setText("BG Average: " + greenBG +
+                        "\nFG Average: " + greenFG);
+                textArea_RedDisplay.setText("BG Average: " + redBG +
+                        "\nFG Average: " + redFG);
             }
-            textArea_OtherData.setText("Ratio: " + df.format(manager.getSample_Gene_Ratio(myNumber, ratioMethod)));
+            textArea_OtherData.setText("Ratio: " + ratio);
+            manager.updateSegmentData(myNumber, 0);
         }
+    }
+
+    String greenBG = "";
+    String greenFG = "";
+    String redBG = "";
+    String redFG = "";
+    String ratio = "";
+
+    public void setSegmentationValues(Object[] vals)
+    {
+        greenFG = "" + df.format((int)vals[0]);
+        greenBG = "" + df.format((int)vals[1]);
+        redFG = "" + df.format((int)vals[2]);
+        redBG = "" + df.format((int)vals[3]);
+        ratio = "" + df.format((double)vals[4]);
+        if(ratioMethod==GeneImageAspect.TOTAL_SIGNAL||ratioMethod==GeneImageAspect.TOTAL_SUBTRACT_BG)
+        {
+            textArea_GreenDisplay.setText("BG Total: " + greenBG +
+                    "\nFG Total: " +  greenFG);
+            textArea_RedDisplay.setText("BG Total: " + redBG +
+                    "\nFG Total: " + redFG);
+        }
+        else
+        {
+            textArea_GreenDisplay.setText("BG Average: " + greenBG +
+                    "\nFG Average: " + greenFG);
+            textArea_RedDisplay.setText("BG Average: " + redBG +
+                    "\nFG Average: " + redFG);
+        }
+        textArea_OtherData.setText("Ratio: " + ratio);
     }
 
     private DecimalFormat df = new DecimalFormat("###.####");
@@ -661,239 +699,4 @@ public class SegmentPanel extends JPanel
         }
         cellHeight = cell.ypoints[3] - cell.ypoints[0];
     }
-/*
-    private void setup()
-    {
-        JPanel segment = new JPanel();
-        TitledBorder seg_title = BorderFactory.createTitledBorder(blackline, "Segmentation");
-        seg_title.setTitleJustification(TitledBorder.LEFT);
-        segment.setBorder(seg_title);
-        segment.setLayout(null);
-        GridBagConstraints gbc_segment = new GridBagConstraints();
-        gbc_segment.insets = new Insets(0, 5, 5, 0);
-        gbc_segment.fill = GridBagConstraints.BOTH;
-        gbc_segment.gridx = 1;
-        gbc_segment.gridy = 2;
-        gbc_segment.gridheight = 1;
-        gbc_segment.gridwidth = 2;
-        gbc_segment.weightx = 1.0;
-        gbc_segment.weighty = 1.0;
-        gbc_segment.insets = new Insets(0, 5, 5, 5); // top, left, bottom, right
-        this.add(segment, gbc_segment);
-
-        JLabel lblNewLabel_1 = new JLabel("Choose one of the following segmentation options:");
-        lblNewLabel_1.setBounds(10, 20, 300, 14);
-        segment.add(lblNewLabel_1);
-
-        ipGrn = manager.getSample_GreenImagePlus(myNumber);
-        ipRed = manager.getSample_RedImagePlus(myNumber);
-
-        JRadioButton rdbtnNewRadioButton = new JRadioButton("Adaptive Circle");
-        rdbtnNewRadioButton.setBounds(310, 16, 110, 23);
-        rdbtnNewRadioButton.addActionListener(adaptiveCircle ->
-        {
-            segmentationMode(segment);
-            segmentMode = GeneImageAspect.ADAPTIVE_CIRCLE;
-            manager.setSample_SegmentationMethod(myNumber, segmentMode);
-            refreshSegmentation();
-        });
-        segment.add(rdbtnNewRadioButton);
-
-        JRadioButton rdbtnNewRadioButton_1 = new JRadioButton("Seeded Region Growing");
-        rdbtnNewRadioButton_1.setBounds(420, 16, 160, 23);
-        rdbtnNewRadioButton_1.addActionListener(seededRegionButton ->
-        {
-            segmentationMode(segment);
-            segmentMode = GeneImageAspect.SEEDED_REGION;
-            manager.setSample_SegmentationMethod(myNumber, segmentMode);
-            refreshSegmentation();
-        });
-
-        segment.add(rdbtnNewRadioButton_1);
-
-        // Button group so only one radio button can be active at one time.
-        group1 = new ButtonGroup();
-        group1.add(rdbtnNewRadioButton);
-        group1.add(rdbtnNewRadioButton_1);
-
-        JLabel lblThreshold = new JLabel("Threshold");
-        lblThreshold.setBounds(430, 50, 60, 14);
-        segment.add(lblThreshold);
-
-        JLabel lblSpinnerGrid = new JLabel("Grid");
-        lblSpinnerGrid.setBounds(430, 110, 40, 14);
-        segment.add(lblSpinnerGrid);
-
-        SpinnerModel spinnerGrid = new SpinnerNumberModel(1, // initial value
-                1, // min
-                100, // max
-                1);// step
-
-        spnGrid = new JSpinner(spinnerGrid);
-        spnGrid.setBounds(480, 110, 40, 20);
-        segment.add(spnGrid);
-
-        spnGrid.addChangeListener(changePosition ->
-        {
-            if (sdGreenSlide != null && !segmentationIsChanging)
-            {
-                moveTo((Integer) spnGrid.getValue(), (Integer) spnSpot.getValue());
-                updateGeneInfo(segmentMode);
-            }
-        });
-
-        JLabel lblSpinnerSpot = new JLabel("Spot");
-        lblSpinnerSpot.setBounds(430, 150, 40, 14);
-        segment.add(lblSpinnerSpot);
-
-        SpinnerModel spinnerSpot = new SpinnerNumberModel(1, // initial
-                // value
-                1, // min
-                552, // max
-                1);// step
-
-        spnSpot = new JSpinner(spinnerSpot);
-        spnSpot.setBounds(480, 150, 40, 20);
-        segment.add(spnSpot);
-
-        spnSpot.addChangeListener(changePosition ->
-        {
-            if (sdGreenSlide != null && !segmentationIsChanging)
-            {
-                moveTo((Integer) spnGrid.getValue(), (Integer) spnSpot.getValue());
-                updateGeneInfo(segmentMode);
-            }
-        });
-        JCheckBox chckbxNewCheckBox = new JCheckBox("Flag spot");
-        chckbxNewCheckBox.setBounds(530, 150, 97, 23);
-        segment.add(chckbxNewCheckBox);
-
-        slidderSeededThreshold = new JSlider(JSlider.HORIZONTAL, 5, 50, 10);
-        slidderSeededThreshold.setMajorTickSpacing(15);
-        slidderSeededThreshold.setMinorTickSpacing(5);
-        slidderSeededThreshold.setPaintTicks(true);
-        slidderSeededThreshold.setPaintLabels(true);
-        slidderSeededThreshold.setBounds(500, 50, 150, 40);
-        segment.add(slidderSeededThreshold);
-        slidderSeededThreshold.addChangeListener(seededThresholdChange ->
-        {
-            if (sdGreenSlide != null)
-            {
-                updateGeneInfo(segmentMode);
-                manager.setSample_MethodThreshold(myNumber, slidderSeededThreshold.getValue());
-                sdGreenSlide.repaint();
-                sdRedSlide.repaint();
-            }
-        });
-
-        JLabel lblGreen = new JLabel("Green");
-        lblGreen.setBounds(90, 250, 40, 14);
-        segment.add(lblGreen);
-
-        JLabel lblRed = new JLabel("Red");
-        lblRed.setBounds(300, 250, 40, 14);
-        segment.add(lblRed);
-
-        // Expression panel starts here
-        JPanel expression = new JPanel();
-        TitledBorder exp_title = BorderFactory.createTitledBorder(blackline, "Gene Expression Ratios");
-        exp_title.setTitleJustification(TitledBorder.LEFT);
-        expression.setBorder(exp_title);
-        expression.setLayout(null);
-        GridBagConstraints gbc_expression = new GridBagConstraints();
-        gbc_expression.insets = new Insets(0, 5, 5, 0);
-        gbc_expression.fill = GridBagConstraints.BOTH;
-        gbc_expression.gridx = 1;
-        gbc_expression.gridy = 3;
-        gbc_expression.gridheight = 1;
-        gbc_expression.gridwidth = 2;
-        gbc_expression.weightx = 1.0;
-        gbc_expression.weighty = 1.0;
-        gbc_expression.insets = new Insets(0, 5, 0, 5); // top, left,
-        // bottom,
-        // right
-        this.add(expression, gbc_expression);
-
-        JLabel lblNewLabel_2 = new JLabel("Select the colour representing the control in this microarray:");
-        lblNewLabel_2.setBounds(10, 20, 350, 14);
-        expression.add(lblNewLabel_2);
-
-        JRadioButton rdbtnGreen = new JRadioButton("Green");
-        rdbtnGreen.setBounds(370, 16, 60, 23);
-        expression.add(rdbtnGreen);
-
-        JRadioButton rdbtnRed = new JRadioButton("Red");
-        rdbtnRed.setBounds(460, 16, 60, 23);
-        expression.add(rdbtnRed);
-
-        // Button group so only one radio button can be active at one time.
-
-        group2 = new ButtonGroup();
-        group2.add(rdbtnGreen);
-        group2.add(rdbtnRed);
-
-        JLabel lblNewLabel_3 = new JLabel("Select a method for calculating the gene expression levels:");
-        lblNewLabel_3.setBounds(10, 60, 350, 14);
-        expression.add(lblNewLabel_3);
-
-        String[] signal = { "Total Signal", "Average Signal", "Total Signal BG Subtraction",
-                "Average Signal BG Subtraction" };
-        JComboBox<String> comboBox_1 = new JComboBox<String>(signal);
-        comboBox_1.setBounds(360, 58, 200, 20);
-        expression.add(comboBox_1);
-
-        comboBox_1.addActionListener(combo_1 ->
-        {
-            if (sdGreenSlide != null)
-            {
-                switch (comboBox_1.getSelectedIndex())
-                {
-                    case 0:
-                        ratioMethod = GeneImageAspect.TOTAL_SIGNAL;
-                        break;
-                    case 1:
-                        ratioMethod = GeneImageAspect.AVG_SIGNAL;
-                        break;
-                    case 2:
-                        ratioMethod = GeneImageAspect.TOTAL_SUBTRACT_BG;
-                        break;
-                    case 3:
-                        ratioMethod = GeneImageAspect.AVG_SUBTRACT_BG;
-                        break;
-                }
-                manager.setSample_RatioMethod(myNumber, ratioMethod);
-
-                updateGeneInfo(segmentMode);
-            }
-        });
-        comboBox_1.setSelectedIndex(0);
-
-        textArea_3 = new JTextArea();
-        textArea_3.setBounds(10, 85, 140, 140);
-        expression.add(textArea_3);
-        textArea_3.setColumns(10);
-
-        JLabel lblGreen_1 = new JLabel("Green");
-        lblGreen_1.setBounds(60, 250, 40, 14);
-        expression.add(lblGreen_1);
-
-        textArea_4 = new JTextArea();
-        textArea_4.setBounds(215, 85, 140, 140);
-        expression.add(textArea_4);
-        textArea_4.setColumns(10);
-
-        JLabel lblRed_1 = new JLabel("Red");
-        lblRed_1.setBounds(280, 250, 40, 14);
-        expression.add(lblRed_1);
-
-        textArea_5 = new JTextArea();
-        textArea_5.setBounds(410, 85, 140, 140);
-        expression.add(textArea_5);
-        textArea_5.setColumns(10);
-
-        JLabel lblCombined = new JLabel("Combined");
-        lblCombined.setBounds(450, 250, 100, 14);
-        expression.add(lblCombined);
-    }
-    */
 }

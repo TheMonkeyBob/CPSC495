@@ -680,4 +680,9 @@ public class Project
     {
         return sample_list.get(sample).getRedImagePlus();
     }
+
+    public void setSample_Grid_RowsAndColumns(int sample, int grid, int[] rc)
+    {
+        sample_list.get(sample).setGrid_RowsAndColumns(grid, rc);
+    }
 }

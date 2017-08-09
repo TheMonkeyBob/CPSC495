@@ -34,28 +34,41 @@ public class SampleIO
             copyFile(redPath, path + "\\" + redName);
             copyFile(genePath, path + "\\" + geneName);
 
-            RandomAccessFile writer = new RandomAccessFile(path, "rw");
+            RandomAccessFile writer = new RandomAccessFile(fullPath, "rw");
             writer.writeChars("SMPL");
             writer.writeByte(1); //Version
-            writer.writeByte(0);
+            writer.writeChar(0);
             writer.writeChars(name);
-            writer.writeByte(0);
+            writer.writeChar(0);
             writer.writeChars(greenName); //write green image file name
-            writer.writeByte(0);
+            writer.writeChar(0);
             writer.writeChars(redName); //write red image file name
-            writer.writeByte(0);
+            writer.writeChar(0);
             writer.writeChars(geneName); //write gene data file name
-            writer.writeByte(0);
+            writer.writeChar(0);
             writer.writeChars("END");
             writer.close();
+
+            Opener greenImage = new Opener();
+            Opener redImage = new Opener();
+            ImagePlus green_IP = greenImage.openImage(greenPath);
+            ImagePlus red_IP = redImage.openImage(redPath);
+
+            manager.addSample(path, name, green_IP, red_IP);
         }
         catch (FileNotFoundException e)
         {
+            System.out.println("New sample file not found!");
+            System.out.println("Path: " + path);
+            System.out.println("Name: " + name);
             e.printStackTrace();
             return false;
         }
         catch (IOException e)
         {
+            System.out.println("New sample I/O exception!");
+            System.out.println("Path: " + path);
+            System.out.println("Name: " + name);
             e.printStackTrace();
             return false;
         }
@@ -81,9 +94,12 @@ public class SampleIO
             type += file.readChar();
             //do something if type != "SMPL"
             byte version = file.readByte();
+            file.readChar();
             String nam = readString(file);
             String greenName = readString(file);
+            System.out.println(path + "\\" + greenName);
             String redName = readString(file);
+            System.out.println(path + "\\" + redName);
             String geneName = readString(file);
 
             Opener greenImage = new Opener();
@@ -100,11 +116,17 @@ public class SampleIO
         }
         catch (FileNotFoundException e)
         {
+            System.out.println("Read sample file not found!");
+            System.out.println("Path: " + path);
+            System.out.println("Name: " + name);
             e.printStackTrace();
             return false;
         }
         catch (IOException e)
         {
+            System.out.println("Read sample I/O exception!");
+            System.out.println("Path: " + path);
+            System.out.println("Name: " + name);
             e.printStackTrace();
             return false;
         }

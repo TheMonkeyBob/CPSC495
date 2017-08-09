@@ -2,7 +2,7 @@ package application.internal;
 
 import java.awt.*;
 
-import application.GeneImageAspect;
+import application.tools.GeneImageAspect;
 import ij.ImagePlus;
 import ij.io.Opener;
 
@@ -574,6 +574,13 @@ public class Sample
     public Polygon getGrid_Spot(int grid, int spot)
     {
         return grid_manager.getGrid(grid).getSpot(spot);
+    }
+
+    public void setGrid_RowsAndColumns(int grid, int[] rc)
+    {
+        Grid g = grid_manager.getGrid(grid);
+        g.setRows(rc[0]);
+        g.setColumns(rc[1]);
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -19,41 +19,18 @@ public class MainWindow extends JFrame
 
     private JPanel contentPane;
 
-    private JProgressBar exportBar;
-    private JProgressBar importBar;
-    private JProgressBar openBar;
-    private JProgressBar saveAsBar;
-
-    private String saveFileNamePath;
-    private String openFileNamePath;
-    private String saveAsFileNamePath;
-    private String importFileNamePath;
-    private String exportFileNamePath;
-
     private GuiManager manager;
-
-    String[] dataArray;
-    String CSVData;
-
-    private JTabbedPane tabbedPane;
-    private int counterSample = 1;
-
-    private MainWindow main;
-
-    private int tab_panel_number = 0;
-
-    //State data
-    private String project_name;
-    private int active_sample;
+    private String myName;
+    private String projectName;
+    private String sampleName;
 
     /**
      * Create the frame.
      */
     public MainWindow(GuiManager manager)
     {
-        super("Improved Magic Tool");
-        setIconImage(Toolkit.getDefaultToolkit().getImage(MainWindow.class.getResource("/application/img/magic-wand-icon.png")));
-        main = this;
+        super();
+        setIconImage(ImgManager.Icon_Application.getImage());
 
         this.manager = manager;
 
@@ -71,522 +48,64 @@ public class MainWindow extends JFrame
         JMenu mnFile = new JMenu("File");
         menuBar.add(mnFile);
 
-        JMenuItem mntmNewProject = new JMenuItem("New Project....");
-        mntmNewProject.setMnemonic(KeyEvent.VK_N);
-        mntmNewProject.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, ActionEvent.CTRL_MASK));
-        mntmNewProject.addActionListener(pickedNew ->
-        {
-            Thread importThread = new Thread() {
+        JMenuItem menuItem_NewProject = new JMenuItem("New Project");
+        menuItem_NewProject.setMnemonic(KeyEvent.VK_N);
+        menuItem_NewProject.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_N, ActionEvent.CTRL_MASK));
+        menuItem_NewProject.addActionListener(pickedItem_NewProject -> lambda_NewProject());
+        mnFile.add(menuItem_NewProject);
 
-                public void run() {
-
-                    //importBar = new JProgressBar();
-                    //importBar.setVisible(true);
-                    //importBar.setIndeterminate(true);
-
-                    class NewProject extends SwingWorker<Void, Void>
-                    {
-                        JFileChooser chooser = new JFileChooser();
-                        FileNameExtensionFilter filter;
-                        String filePath = "";
-                        boolean pass = false;
-
-                        @Override
-                        public Void doInBackground() throws Exception
-                        {
-                            try
-                            {
-                                File f;
-                                chooser.setDialogTitle("Select Project Location");
-                                chooser.showSaveDialog(null);
-                                f = chooser.getSelectedFile();
-
-                                pass = true;
-                            }
-                            catch (NullPointerException ex)
-                            {
-                                //JOptionPane.showMessageDialog(null, "Pair selection canceled.", "File warning",
-                                //        JOptionPane.WARNING_MESSAGE);
-                            }
-                            if (pass)
-                            {
-                                manager.newProject(filePath);
-                            }
-                            return null;
-                        }
-
-                        @Override
-                        public void done()
-                        {
-                            importBar.setIndeterminate(false);
-                            if (pass)
-                            {
-                                //JOptionPane.showMessageDialog(null, "Import Complete.");
-                            }
-                        }
-                    }
-                    new NewProject().execute();
-                }
-
-            };
-            importThread.start();
-            // TODO New project code goes here.
-
-        });
-        mnFile.add(mntmNewProject);
-
-        JMenuItem mntmOpenProject = new JMenuItem("Open Project....");
-        mntmOpenProject.setMnemonic(KeyEvent.VK_O);
-        mntmOpenProject.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, ActionEvent.CTRL_MASK));
-        mntmOpenProject.addActionListener(pickedOpen -> {
-
-            Thread openThread = new Thread() {
-
-                public void run() {
-
-                    openBar = new JProgressBar();
-                    openBar.setVisible(true);
-                    openBar.setIndeterminate(true);
-
-                    class OpenProject extends SwingWorker<Void, Void> {
-
-                        JFileChooser chooser = new JFileChooser();
-                        FileNameExtensionFilter filter;
-
-                        @Override
-                        public Void doInBackground() throws Exception {
-
-                            try {
-
-                                filter = new FileNameExtensionFilter("Text file", "txt");
-                                chooser.setFileFilter(filter);
-
-                                chooser.showOpenDialog(null);
-                                File f = chooser.getSelectedFile();
-                                String openFileNamePath = f.getAbsolutePath();
-
-                                BufferedReader readData = null;
-                                List<String> lines = new ArrayList<String>();
-                                String entry;
-
-                                try {
-
-                                    readData = new BufferedReader(new FileReader(openFileNamePath));
-
-                                    while ((entry = readData.readLine()) != null) {
-
-                                        lines.add(entry);
-
-                                    }
-
-                                } catch (FileNotFoundException e) {
-
-                                    System.out.println("File not found");
-
-                                } finally {
-
-                                    String[] data = lines.toArray(new String[0]);
-                                    readData.close();
-
-                                    //ArrayToCSV.arrayChopper(data);
-                                    //CSVData = ArrayToCSV.getCSV();
-
-                                }
-
-                            } catch (NullPointerException ex) {
-
-                                JOptionPane.showMessageDialog(null, "No file selected.", "File warning",
-                                        JOptionPane.WARNING_MESSAGE);
-
-                            }
-
-                            return null;
-                        }
-
-                        @Override
-                        public void done() {
-
-                            openBar.setIndeterminate(false);
-                            JOptionPane.showMessageDialog(null, "Project Open complete.");
-
-                        }
-
-                    }
-
-                    new OpenProject().execute();
-
-                }
-
-            };
-
-            openThread.start();
-
-        });
-        mnFile.add(mntmOpenProject);
+        JMenuItem menuItem_OpenProject = new JMenuItem("Open Project");
+        menuItem_OpenProject.setMnemonic(KeyEvent.VK_O);
+        menuItem_OpenProject.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_O, ActionEvent.CTRL_MASK));
+        menuItem_OpenProject.addActionListener(pickedItem_OpenProject -> lambda_OpenProject());
+        mnFile.add(menuItem_OpenProject);
 
         JSeparator separator = new JSeparator();
         mnFile.add(separator);
 
-        JMenuItem mntmSave = new JMenuItem("Save Project");
-        mntmSave.setMnemonic(KeyEvent.VK_S);
-        mntmSave.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, ActionEvent.CTRL_MASK));
-        mntmSave.addActionListener(pickedSave -> {
-
-            Thread saveTread = new Thread() {
-
-                public void run() {
-
-                    JFileChooser chooser = new JFileChooser();
-                    FileNameExtensionFilter filter;
-
-                    try {
-
-                        filter = new FileNameExtensionFilter("Text file", "txt");
-                        chooser.setFileFilter(filter);
-
-                        chooser.showSaveDialog(null);
-                        File f = chooser.getSelectedFile();
-                        saveFileNamePath = f.getAbsolutePath();
-
-                        // TODO file save code goes here.
-
-                        FileWriter fw = new FileWriter(saveFileNamePath);
-
-                    } catch (NullPointerException | IOException ex) {
-
-                        JOptionPane.showMessageDialog(null, "No file selected.", "File warning",
-                                JOptionPane.WARNING_MESSAGE);
-
-                    }
-
-                }
-
-            };
-
-            saveTread.start();
-
+        JMenuItem menuItem_SaveProject = new JMenuItem("Save Project");
+        menuItem_SaveProject.setMnemonic(KeyEvent.VK_S);
+        menuItem_SaveProject.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_S, ActionEvent.CTRL_MASK));
+        menuItem_SaveProject.addActionListener(pickedItem_SaveProject ->
+        {
+            manager.saveProject();
         });
-        mnFile.add(mntmSave);
-
-        JMenuItem mntmSaveAs = new JMenuItem("Save as....");
-        mntmSaveAs.addActionListener(pickedSaveAs -> {
-
-            Thread saveAsThread = new Thread() {
-
-                public void run() {
-                    saveAsBar = new JProgressBar();
-                    saveAsBar.setVisible(true);
-                    saveAsBar.setIndeterminate(true);
-
-                    class SaveAs extends SwingWorker<Void, Void> {
-
-                        JFileChooser chooser = new JFileChooser();
-                        FileNameExtensionFilter filter;
-
-                        @Override
-                        public Void doInBackground() throws Exception {
-
-                            try {
-
-                                filter = new FileNameExtensionFilter("Text file", "txt");
-                                chooser.setFileFilter(filter);
-
-                                chooser.showSaveDialog(null);
-                                File f = chooser.getSelectedFile();
-                                String saveAsFileNamePath = f.getAbsolutePath();
-
-                                FileWriter writeCSV = new FileWriter(saveAsFileNamePath);
-
-                                try {
-
-                                    for (int i = 0; i < dataArray.length; i++) {
-
-                                        writeCSV.write(dataArray[i] + "\n");
-
-                                    }
-
-                                } catch (IOException e) {
-
-                                    e.printStackTrace();
-
-                                }
-
-                                try {
-
-                                    writeCSV.flush();
-                                    writeCSV.close();
-
-                                } catch (IOException e) {
-
-                                    e.printStackTrace();
-                                }
-
-                            } catch (NullPointerException | IOException ex) {
-
-                                JOptionPane.showMessageDialog(null, "No file selected.", "File warning",
-                                        JOptionPane.WARNING_MESSAGE);
-
-                            }
-
-                            return null;
-                        }
-
-                        @Override
-                        public void done() {
-
-                            saveAsBar.setIndeterminate(false);
-                            JOptionPane.showMessageDialog(null, "Save Complete.");
-
-                        }
-
-                    }
-
-                    new SaveAs().execute();
-
-                }
-
-            };
-
-            saveAsThread.start();
-
-        });
-        mnFile.add(mntmSaveAs);
+        mnFile.add(menuItem_SaveProject);
 
         JSeparator separator_1 = new JSeparator();
         mnFile.add(separator_1);
 
-        JMenuItem mntmImportSampleImage = new JMenuItem("Import Sample Data....");
-        mntmImportSampleImage.setMnemonic(KeyEvent.VK_I);
-        mntmImportSampleImage.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_I, ActionEvent.CTRL_MASK));
-        mntmImportSampleImage.addActionListener(pickedImport -> {
-
-            Thread importThread = new Thread() {
-
-                public void run() {
-
-                    importBar = new JProgressBar();
-                    importBar.setVisible(true);
-                    importBar.setIndeterminate(true);
-
-                    class ImportGene extends SwingWorker<Void, Void>
-                    {
-                        JFileChooser chooser = new JFileChooser();
-                        FileNameExtensionFilter filter;
-                        String greenPath = "";
-                        String redPath = "";
-                        String genePath = "";
-                        boolean pass = false;
-
-                        @Override
-                        public Void doInBackground() throws Exception
-                        {
-                            try
-                            {
-                                filter = new FileNameExtensionFilter("TIF file", "tif");
-                                chooser.setFileFilter(filter);
-                                File f;
-                                chooser.setDialogTitle("Load Red Image File...");
-                                chooser.showOpenDialog(null);
-                                f = chooser.getSelectedFile();
-                                importFileNamePath = f.getAbsolutePath();
-
-                                chooser.setDialogTitle("Load Green Image File...");
-                                chooser.showOpenDialog(null);
-                                f = chooser.getSelectedFile();
-                                greenPath = f.getAbsolutePath();
-                                redPath = importFileNamePath;
-
-                                chooser.setFileFilter(new FileNameExtensionFilter("TXT file", "txt"));
-                                chooser.setDialogTitle("Load Gene Data File...");
-                                chooser.showOpenDialog(null);
-                                f = chooser.getSelectedFile();
-                                genePath = f.getAbsolutePath();
-
-                                pass = true;
-                                // TODO file importing code goes here.
-
-                            }
-                            catch (NullPointerException ex)
-                            {
-                                JOptionPane.showMessageDialog(null, "Pair selection canceled.", "File warning",
-                                        JOptionPane.WARNING_MESSAGE);
-                            }
-                            if (pass)
-                            {
-                                manager.addSample(greenPath, redPath, genePath);
-                            }
-                            return null;
-                        }
-
-                        @Override
-                        public void done()
-                        {
-                            importBar.setIndeterminate(false);
-                            if (pass)
-                            {
-                                JOptionPane.showMessageDialog(null, "Import Complete.");
-                            }
-                        }
-                    }
-                    new ImportGene().execute();
-                }
-
-            };
-            importThread.start();
-
-        });
-        mnFile.add(mntmImportSampleImage);
-
-        JMenuItem mntmExportGeneExpression = new JMenuItem("Export Gene Expression Data");
-        mntmExportGeneExpression.setMnemonic(KeyEvent.VK_E);
-        mntmExportGeneExpression.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_E, ActionEvent.CTRL_MASK));
-        mntmExportGeneExpression.addActionListener(pickedExportGene -> {
-
-            Thread exportThread = new Thread() {
-
-                public void run() {
-                    exportBar = new JProgressBar();
-                    exportBar.setVisible(true);
-                    exportBar.setIndeterminate(true);
-
-                    class ExportGene extends SwingWorker<Void, Void> {
-
-                        JFileChooser chooser = new JFileChooser();
-                        FileNameExtensionFilter filter;
-
-                        @Override
-                        public Void doInBackground() throws Exception {
-                            String exportFileNamePath = "";
-                            try {
-
-                                filter = new FileNameExtensionFilter("Comma Separated Values file", "csv");
-                                chooser.setFileFilter(filter);
-
-                                chooser.showSaveDialog(null);
-                                File f = chooser.getSelectedFile();
-                                exportFileNamePath = f.getAbsolutePath();
-
-                                //CSVWriter.saveCSV(CSVData, exportFileNamePath);
-
-                            } catch (NullPointerException ex) {
-
-                                JOptionPane.showMessageDialog(null, "No file selected.", "File warning",
-                                        JOptionPane.WARNING_MESSAGE);
-                                exportFileNamePath = "";
-                            }
-                            if (exportFileNamePath != "")
-                            {
-                                //TODO: Get focused TabPanel
-                                int focused_tab_num = 0;
-                                manager.fileIO_ExportExpressionData(exportFileNamePath, focused_tab_num);
-                            }
-
-                            return null;
-                        }
-
-                        @Override
-                        public void done() {
-
-                            exportBar.setIndeterminate(false);
-                            JOptionPane.showMessageDialog(null, "Export Complete.");
-
-                        }
-
-                    }
-
-                    new ExportGene().execute();
-
-                }
-
-            };
-
-            exportThread.start();
-
-        });
-        mnFile.add(mntmExportGeneExpression);
-
-        JSeparator separator_2 = new JSeparator();
-        mnFile.add(separator_2);
-
-        JMenuItem mntmExit = new JMenuItem("Exit");
-        mntmExit.setMnemonic(KeyEvent.VK_Q);
-        mntmExit.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, ActionEvent.CTRL_MASK));
-        mntmExit.addActionListener(pickedExit -> {
-            System.exit(0);
-        });
-        mnFile.add(mntmExit);
-
-        // Edit menu
-
-        JMenu mnEdit = new JMenu("Edit");
-        menuBar.add(mnEdit);
-
-        JMenuItem mntmUndo = new JMenuItem("Undo");
-        mntmUndo.setMnemonic(KeyEvent.VK_Z);
-        mntmUndo.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Z, ActionEvent.CTRL_MASK));
-        mntmUndo.addActionListener(pickedUndo -> {
-
-            // TODO Undo code goes here.
-
-        });
-        mnEdit.add(mntmUndo);
-
-        JMenuItem mntmRedo = new JMenuItem("Redo");
-        mntmRedo.setMnemonic(KeyEvent.VK_Y);
-        mntmRedo.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Y, ActionEvent.CTRL_MASK));
-        mntmRedo.addActionListener(pickedRedo -> {
-
-            // TODO Redo code goes here.
-
-        });
-        mnEdit.add(mntmRedo);
-
-        // Window menu
-
-        JMenu mnWindow = new JMenu("Window");
-        menuBar.add(mnWindow);
-
-        JMenuItem mntmMinimize = new JMenuItem("Minimize");
-        mntmMinimize.setMnemonic(KeyEvent.VK_M);
-        mntmMinimize.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_M, ActionEvent.CTRL_MASK));
-        mntmMinimize.addActionListener(pickedMini -> {
-
-            // TODO Minimize window code goes here.
-
-        });
-        mnWindow.add(mntmMinimize);
-
-        JMenuItem mntmZoom = new JMenuItem("Zoom");
-        mntmZoom.addActionListener(pickedZoom -> {
-
-            // TODO Zoom code goes here.
-
-        });
-        mnWindow.add(mntmZoom);
+        JMenuItem menuItem_ImportSampleData = new JMenuItem("Import Sample Data....");
+        menuItem_ImportSampleData.setMnemonic(KeyEvent.VK_I);
+        menuItem_ImportSampleData.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_I, ActionEvent.CTRL_MASK));
+        menuItem_ImportSampleData.addActionListener(pickedItem_ImportSampleData -> lambda_ImportSampleData());
+        mnFile.add(menuItem_ImportSampleData);
 
         // Help menu
-
         JMenu mnHelp = new JMenu("Help");
         menuBar.add(mnHelp);
 
-        JMenuItem mntmUserGuide = new JMenuItem("User Guide");
-        mntmUserGuide.setMnemonic(KeyEvent.VK_U);
-        mntmUserGuide.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, ActionEvent.CTRL_MASK));
-        mntmUserGuide.addActionListener(pickedGuide -> {
-
+        JMenuItem menuItem_UserGuide = new JMenuItem("User Guide");
+        menuItem_UserGuide.setMnemonic(KeyEvent.VK_U);
+        menuItem_UserGuide.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_U, ActionEvent.CTRL_MASK));
+        menuItem_UserGuide.addActionListener(pickedItem_UserGuide ->
+        {
+            //TODO: Add user guide
         });
-        mnHelp.add(mntmUserGuide);
+        mnHelp.add(menuItem_UserGuide);
 
         JSeparator separator_3 = new JSeparator();
         mnHelp.add(separator_3);
 
-        JMenuItem mntmAbout = new JMenuItem("About");
-        mntmAbout.addActionListener(pickedAbout -> {
+        JMenuItem menuItem_About = new JMenuItem("About");
+        menuItem_About.addActionListener(pickedItem_About ->
+        {
+            //TODO: add proper about page
             JOptionPane.showMessageDialog(null,
                     "CPSC 450: Bioinformatics team:\n Lee Callaghan\n Edward Greenop\n Darren Hendrickson\n Lukas Pihl\n",
                     "About us", JOptionPane.INFORMATION_MESSAGE);
         });
-        mnHelp.add(mntmAbout);
+        mnHelp.add(menuItem_About);
 
         // Panel stuff starts here
         contentPane = new JPanel();
@@ -598,15 +117,185 @@ public class MainWindow extends JFrame
         gbl_contentPane.columnWeights = new double[] { 1.0, Double.MIN_VALUE };
         gbl_contentPane.rowWeights = new double[] { 1.0, Double.MIN_VALUE };
         contentPane.setLayout(gbl_contentPane);
+
+        LoadDataDialog ld = new LoadDataDialog(this);
+        ld.setVisible(true);
     }
 
     public void setTabbedPane(JTabbedPane tp)
     {
-        tabbedPane = tp;
         GridBagConstraints gbc_tabbedPane = new GridBagConstraints();
         gbc_tabbedPane.fill = GridBagConstraints.BOTH;
         gbc_tabbedPane.gridx = 0;
         gbc_tabbedPane.gridy = 0;
-        contentPane.add(tabbedPane, gbc_tabbedPane);
+        contentPane.add(tp, gbc_tabbedPane);
+    }
+
+    private void lambda_NewProject()
+    {
+        Thread importThread = new Thread()
+        {
+            public void run()
+            {
+                class NewProject extends SwingWorker<Void, Void>
+                {
+                    private JFileChooser chooser = new JFileChooser();
+                    private String filePath = "";
+                    private boolean pass = false;
+
+                    @Override
+                    public Void doInBackground() throws Exception
+                    {
+                        try
+                        {
+                            chooser.setDialogTitle("Select Project Location");
+                            chooser.showSaveDialog(null);
+                            filePath = chooser.getSelectedFile().getAbsolutePath();
+                            pass = true;
+                        }
+                        catch (NullPointerException ex)
+                        {
+                            //Do nothing
+                            filePath = "";
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    public void done()
+                    {
+                        if (pass)
+                        {
+                            pass = false;
+                            if (!filePath.equals(""))
+                            {
+                                manager.newProject(filePath);
+                            }
+                        }
+                    }
+                }
+                new NewProject().execute();
+            }
+        };
+        importThread.start();
+    }
+
+    private void lambda_OpenProject()
+    {
+        Thread openThread = new Thread()
+        {
+            public void run()
+            {
+                class OpenProject extends SwingWorker<Void, Void>
+                {
+                    private JFileChooser chooser = new JFileChooser();
+                    private FileNameExtensionFilter filter;
+                    private String filePath = "";
+                    private boolean pass = false;
+
+                    @Override
+                    public Void doInBackground() throws Exception
+                    {
+                        try
+                        {
+                            filter = new FileNameExtensionFilter("Project File", "proj");
+                            chooser.setFileFilter(filter);
+
+                            chooser.showOpenDialog(null);
+                            filePath = chooser.getSelectedFile().getAbsolutePath();
+                            pass = true;
+                        }
+                        catch (NullPointerException ex)
+                        {
+                            //Do nothing
+                            filePath = "";
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    public void done()
+                    {
+                        if (pass)
+                        {
+                            pass = false;
+                            if (!filePath.equals(""))
+                            {
+                                manager.openProject(filePath);
+                            }
+                        }
+                    }
+
+                }
+                new OpenProject().execute();
+            }
+        };
+        openThread.start();
+    }
+
+    private void lambda_ImportSampleData()
+    {
+        Thread importThread = new Thread()
+        {
+            public void run()
+            {
+                class ImportGene extends SwingWorker<Void, Void>
+                {
+                    private JFileChooser chooser = new JFileChooser();
+                    private FileNameExtensionFilter filter;
+                    private String greenPath = "";
+                    private String redPath = "";
+                    private String genePath = "";
+                    private boolean pass = false;
+
+                    @Override
+                    public Void doInBackground() throws Exception
+                    {
+                        try
+                        {
+                            filter = new FileNameExtensionFilter("TIF file", "tif");
+                            chooser.setFileFilter(filter);
+
+                            chooser.setDialogTitle("Load Red Image File...");
+                            chooser.showOpenDialog(null);
+                            redPath = chooser.getSelectedFile().getAbsolutePath();
+
+                            chooser.setDialogTitle("Load Green Image File...");
+                            chooser.showOpenDialog(null);
+                            greenPath = chooser.getSelectedFile().getAbsolutePath();
+
+                            chooser.setFileFilter(new FileNameExtensionFilter("TXT file", "txt"));
+                            chooser.setDialogTitle("Load Gene Data File...");
+                            chooser.showOpenDialog(null);
+                            genePath = chooser.getSelectedFile().getAbsolutePath();
+
+                            pass = true;
+                        }
+                        catch (NullPointerException ex)
+                        {
+                            JOptionPane.showMessageDialog(null, "Pair selection canceled.", "File warning",
+                                    JOptionPane.WARNING_MESSAGE);
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    public void done()
+                    {
+                        if (pass)
+                        {
+                            pass = false;
+                            if (!greenPath.equals("") && !redPath.equals("") && !genePath.equals(""))
+                            {
+                                manager.newSample("", greenPath, redPath, genePath);
+                                JOptionPane.showMessageDialog(null, "Import Complete.");
+                            }
+                        }
+                    }
+                }
+                new ImportGene().execute();
+            }
+        };
+        importThread.start();
     }
 }

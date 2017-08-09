@@ -27,7 +27,7 @@ public class ProjectIO
                 RandomAccessFile writer = new RandomAccessFile(fullPath, "rw");
                 writer.writeChars("PROJ");
                 writer.writeByte(1); //Version
-                writer.writeByte(0);
+                writer.writeChar(0);
                 writer.writeChars("END");
                 writer.close();
                 file = new File(path + "\\" + "Grids");
@@ -36,6 +36,9 @@ public class ProjectIO
         }
         catch (IOException e)
         {
+            System.out.println("New project I/O exception!");
+            System.out.println("Path: " + path);
+            e.printStackTrace();
             return false;
         }
         return true;
@@ -52,16 +55,17 @@ public class ProjectIO
             writer.writeByte(1); //Version
             ArrayList<String> pathList = manager.getSamplePaths();
             ArrayList<String> nameList = manager.getSampleNames();
+            char empty = 0;
 
             for (int i = 0; i < pathList.size(); i++)
             {
-                writer.writeByte(0);
+                writer.writeChar(empty);
                 writer.writeChars(pathList.get(i));
-                writer.writeByte(0);
+                writer.writeChar(empty);
                 writer.writeChars(nameList.get(i));
             }
 
-            writer.writeByte(0);
+            writer.writeChar(empty);
             writer.writeChars("END");
             writer.close();
 
@@ -73,11 +77,16 @@ public class ProjectIO
         }
         catch (FileNotFoundException e)
         {
-            System.out.println("File not found!");
+            System.out.println("Write project file not found!");
+            System.out.println("Path: " + path);
+            e.printStackTrace();
             return false;
         }
         catch (IOException e)
         {
+            System.out.println("Write project I/O exception!");
+            System.out.println("Path: " + path);
+            e.printStackTrace();
             return false;
         }
         return true;
@@ -105,28 +114,34 @@ public class ProjectIO
             while (true)
             {
                 c = file.readChar();
+                int i = c;
+                System.out.println(c);
                 if (c == 0)
                 {
                     if (isPath)
                     {
                         paths.add(p);
+                        isPath = false;
                         p = "";
                     }
                     else
                     {
                         names.add(n);
+                        isPath = true;
                         n = "";
                     }
+                    System.out.println("++" + p);
                 }
                 else
                 {
                     if (isPath)
                     {
                         p += c;
-                        if (p.equals("END") && file.getFilePointer() == file.length()-1)
+                        if (p.equals("END") && file.getFilePointer() >= file.length()-1)
                         {
                             break;
                         }
+                        System.out.println("--" + p);
                     }
                     else
                     {
@@ -134,14 +149,21 @@ public class ProjectIO
                     }
                 }
             }
+            file.close();
             manager.readAllSamples(paths, names);
         }
         catch (FileNotFoundException e)
         {
+            System.out.println("Read project file not found!");
+            System.out.println("Path: " + path);
+            e.printStackTrace();
             return false;
         }
         catch (IOException e)
         {
+            System.out.println("Read project I/O exception!");
+            System.out.println("Path: " + path);
+            e.printStackTrace();
             return false;
         }
         return true;

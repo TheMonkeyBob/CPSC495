@@ -3,6 +3,7 @@ package application.file;
 import application.engine.Engine;
 import application.engine.FileIOManager;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.RandomAccessFile;
@@ -17,6 +18,11 @@ public class GridIO
     {
         try
         {
+            File f = new File(path);
+            if (!f.exists())
+            {
+                f.createNewFile();
+            }
             RandomAccessFile file = new RandomAccessFile(path, "rw");
             file.writeChars("GRID");
             file.writeByte(1); //Version
@@ -37,17 +43,19 @@ public class GridIO
                 file.writeInt(dim[0]);
                 file.writeInt(dim[1]);
             }
-            file.writeByte(0);
+            file.writeChar(0);
             file.writeChars("END");
             file.close();
         }
         catch (FileNotFoundException e)
         {
-            System.out.println("File not found!");
+            System.out.println("Grid file not found!");
+            e.printStackTrace();
             return false;
         }
         catch (IOException e)
         {
+            e.printStackTrace();
             return false;
         }
         return true;
@@ -105,10 +113,12 @@ public class GridIO
         }
         catch (FileNotFoundException e)
         {
+            e.printStackTrace();
             return false;
         }
         catch (IOException e)
         {
+            e.printStackTrace();
             return false;
         }
         return true;

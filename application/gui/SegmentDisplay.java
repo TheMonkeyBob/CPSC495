@@ -27,7 +27,7 @@ package application.gui;
 import application.engine.GuiManager;
 import ij.ImagePlus;
 import ij.gui.ImageCanvas;
-import application.GeneImageAspect;
+import application.tools.GeneImageAspect;
 
 import javax.swing.*;
 import java.awt.*;
@@ -276,8 +276,28 @@ public class SegmentDisplay extends JPanel {
      * sets the spot cell coordinates
      * @param p polygon containing the coordinates of the spot
      */
-    public void setCell(Polygon p) {
+    public void setCell(Polygon p)
+    {
         cell = new Polygon(p.xpoints,p.ypoints,4);
+        zoomed = 1.0;
+        if (cell.xpoints[1] - cell.xpoints[0] > cell.ypoints[3] - cell.ypoints[0])
+        {
+            int w = cell.xpoints[1] - cell.xpoints[0];
+            if (w != 0)
+            {
+                double z = 1.0 * (view_width / w);
+                zoom(z);
+            }
+        }
+        else
+        {
+            int h = cell.ypoints[3] - cell.ypoints[0];
+            if (h != 0)
+            {
+                double z = 1.0 * (view_height / h);
+                zoom(z);
+            }
+        }
         for(int j=0; j<cell.xpoints.length; j++){
             cell.xpoints[j]=screenX(cell.xpoints[j]);
             cell.ypoints[j]=screenY(cell.ypoints[j]);
@@ -438,4 +458,12 @@ public class SegmentDisplay extends JPanel {
         return (Math.round((float)this.getZoom()*(canvasY-this.ic.getSrcRect().y)));
     }
 
+
+    private int view_height;
+    private int view_width;
+    public void setViewSize(int w, int h)
+    {
+        view_width = w;
+        view_height = h;
+    }
 }

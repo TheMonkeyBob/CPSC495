@@ -2,18 +2,13 @@ package application.engine;
 
 import java.awt.*;
 import java.io.IOException;
-import java.io.ObjectInput;
 
-import application.GeneImageAspect;
-import application.engine.FileIOManager;
-import application.engine.GuiManager;
-import application.engine.InternalManager;
 import application.file.ExpressionWriter;
-import application.gui.MainWindow;
 import application.internal.AllGeneData;
 import application.internal.Project;
+import application.tools.GeneImageAspect;
+import application.tools.StringTool;
 import ij.ImagePlus;
-import ij.gui.GUI;
 
 import javax.swing.*;
 
@@ -47,7 +42,28 @@ public class Engine
     {
         manager_File.newProject(path);
         project.setPath(path);
-        //project.setName(name);
+        project.setName(StringTool.parse_FilePath_File_NameOnly(path));
+    }
+
+    public void openProject(String path)
+    {
+        manager_File.loadProject(path);
+        project.setPath(StringTool.parse_FilePath_LeadingPath(path));
+        project.setName(StringTool.parse_FilePath_File_NameOnly(path));
+    }
+
+    public void saveProject()
+    {
+        manager_File.saveProject(project.getPath() + "\\" + project.getName() + ".proj");
+    }
+
+    public void newSample(Object caller, String name, String greenPath, String redPath, String genePath)
+    {
+        if (caller != null && caller instanceof GuiManager)
+        {
+            manager_File.newSample(project.getPath() + "\\" + name, name, greenPath, redPath, genePath);
+            //project.addSample(greenPath, redPath);
+        }
     }
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,15 +113,7 @@ public class Engine
         if (caller != null && caller instanceof FileIOManager)
         {
             project.addSample(path, name, green, red);
-        }
-    }
-
-    public void addSample(Object caller, String greenPath, String redPath, String genePath)
-    {
-        if (caller != null && caller instanceof GuiManager)
-        {
-            //manager_File.newSample(greenPath, redPath, genePath)
-            project.addSample(greenPath, redPath);
+            manager_GUI.addSample(name);
         }
     }
 
@@ -616,5 +624,66 @@ public class Engine
     public ImagePlus getSample_RedImagePlus(int sample)
     {
         return project.getSample_RedImagePlus(sample);
+    }
+
+    public void setSample_Grid_RowsAndColumns(Object caller, int sample, int grid, int[] rc)
+    {
+        if (caller != null && caller instanceof GuiManager)
+        {
+            project.setSample_Grid_RowsAndColumns(sample, grid, rc);
+        }
+    }
+
+    private boolean segment_updating = false;
+    private int segment_sample = 0;
+    private int segment_grid = 0;
+    public void updateSegmentData(int sample, int grid)
+    {
+        Thread importThread = new Thread()
+        {
+            public void run()
+            {
+                class UpdateSegment extends SwingWorker<Void, Void>
+                {
+                    int sample;
+                    int grid;
+                    Object[] vals = null;
+
+                    @Override
+                    public Void doInBackground() throws Exception
+                    {
+                        boolean passed = false;
+                        while (!passed)
+                        {
+                            sample = segment_sample;
+                            grid = segment_grid;
+
+                            vals = new Object[5];
+                            if (sample == segment_sample && grid == segment_grid)
+                            {
+                                vals[0] = project.getSample_Gene_GreenForegroundTotal(sample);
+                                vals[1] = project.getSample_Gene_GreenBackgroundTotal(sample);
+                                vals[2] = project.getSample_Gene_RedForegroundTotal(sample);
+                                vals[3] = project.getSample_Gene_RedBackgroundTotal(sample);
+                                vals[4] = project.getSample_Gene_Ratio(sample, GeneImageAspect.SEEDED_REGION);
+                                passed = true;
+                            }
+                        }
+                        return null;
+                    }
+
+                    @Override
+                    public void done()
+                    {
+                        manager_GUI.setSegmentationValues(vals);
+                    }
+                }
+                new UpdateSegment().execute();
+            }
+        };
+        if (!segment_updating)
+        {
+            importThread.start();
+        }
     }
 }

@@ -8,6 +8,9 @@ import javax.swing.*;
 public class ImgManager
 {
     private static String path = "application/img/";
+
+    public final static ImageIcon Icon_Application = new ImageIcon(path + "Icon_Application.png");
+
     public final static ImageIcon FixedCircle_On = new ImageIcon(path + "FixedCircle_On.png");
     public final static ImageIcon FixedCircle_Off = new ImageIcon(path + "FixedCircle_Off.png");
     public final static ImageIcon FixedCircle_Hover = new ImageIcon(path + "FixedCircle_Hover.png");

@@ -37,10 +37,10 @@ public class GridSetupDialog extends JDialog {
 
     private static final long serialVersionUID = 1L;
     private VerticalLayout verticalLayout1 = new VerticalLayout();
-    private JPanel namePanel = new JPanel();
+    //private JPanel namePanel = new JPanel();
     private JLabel nameLabel = new JLabel();
     private JTextField nameField = new JTextField();
-    private JPanel noGridsPanel = new JPanel();
+    //private JPanel noGridsPanel = new JPanel();
     private JLabel gridNumLabel = new JLabel();
     private JTextField gridNum = new JTextField();
     private JPanel confirmPanel = new JPanel();
@@ -136,8 +136,8 @@ public class GridSetupDialog extends JDialog {
         gridSetupPanel.setLayout(borderLayout1);
         positionPanel.setBorder(BorderFactory.createEtchedBorder());
         positionPanel.setLayout(verticalLayout4);
-        namePanel.setBorder(BorderFactory.createEtchedBorder());
-        noGridsPanel.setBorder(BorderFactory.createEtchedBorder());
+        //namePanel.setBorder(BorderFactory.createEtchedBorder());
+        //noGridsPanel.setBorder(BorderFactory.createEtchedBorder());
         gridSetupPanel.setBorder(titledBorder1);
         numberingPanel.setLayout(verticalLayout2);
         warningNote.setForeground(Color.red);
@@ -164,14 +164,14 @@ public class GridSetupDialog extends JDialog {
         verticallyPanel.setBorder(titledBorder3);
         this.setTitle("Grid Setup");
         this.getContentPane().setLayout(verticalLayout1);
-        this.getContentPane().add(namePanel, BorderLayout.NORTH);
-        this.getContentPane().add(noGridsPanel, BorderLayout.NORTH);
+        //this.getContentPane().add(namePanel, BorderLayout.NORTH);
+        //this.getContentPane().add(noGridsPanel, BorderLayout.NORTH);
         Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
         this.setLocation((screen.width) / 2 - 200, (screen.height) / 2 - 150);
-        namePanel.add(nameLabel, null);
-        namePanel.add(nameField, null);
-        noGridsPanel.add(gridNumLabel, null);
-        noGridsPanel.add(gridNum, null);
+        //namePanel.add(nameLabel, null);
+        //namePanel.add(nameField, null);
+        //noGridsPanel.add(gridNumLabel, null);
+        //noGridsPanel.add(gridNum, null);
         confirmPanel.add(okButton, null);
         confirmPanel.add(cancelButton, null);
         this.getContentPane().add(gridSetupPanel, BorderLayout.CENTER);
@@ -241,8 +241,6 @@ public class GridSetupDialog extends JDialog {
     /**
      * sets the options displayed in the dialog box
      *
-     * @param grids
-     *            number of grids
      * @param leftRight
      *            whether or not the spot placement is left to right
      * @param topBottom
@@ -251,7 +249,8 @@ public class GridSetupDialog extends JDialog {
      *            whether spot 2 is horizontal (true) or vertical (false) in
      *            relationship to spot 1
      */
-    public void setOptions(String name, int grids, boolean leftRight, boolean topBottom, boolean spotDirection) {
+    public void setOptions(boolean leftRight, boolean topBottom, boolean spotDirection)
+    {
         this.name = name;
         if (this.name.equals(""))
         {
